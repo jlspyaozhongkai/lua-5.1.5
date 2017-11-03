@@ -375,9 +375,9 @@ typedef struct Node {
   TKey i_key;
 } Node;
 
-
+//Table结构
 typedef struct Table {
-  CommonHeader;
+  CommonHeader;														//公共头
   lu_byte flags;  /* 1<<p means tagmethod(p) is not present */ 
   lu_byte lsizenode;  /* log2 of size of `node' array */
   struct Table *metatable;
