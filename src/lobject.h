@@ -40,6 +40,7 @@ typedef union GCObject GCObject;
 ** Common Header for all collectable objects (in macro form, to be
 ** included in other objects)
 */
+/*所有需要GC的对象，都以这个宏开头*/
 #define CommonHeader	GCObject *next; lu_byte tt; lu_byte marked
 
 
@@ -56,6 +57,7 @@ typedef struct GCheader {
 /*
 ** Union of all Lua values
 */
+/**/
 typedef union {
   GCObject *gc;
   void *p;
