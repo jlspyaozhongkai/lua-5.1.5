@@ -166,6 +166,7 @@ union GCObject {
 #define gco2th(o)	check_exp((o)->gch.tt == LUA_TTHREAD, &((o)->th))
 
 /* macro to convert any Lua object into a GCObject */
+//输入Gc类型数据，返回GCObject，直接强转就行
 #define obj2gco(v)	(cast(GCObject *, (v)))
 
 

@@ -258,7 +258,8 @@ typedef union Udata {
     CommonHeader;
     struct Table *metatable;
     struct Table *env;
-    size_t len;
+    size_t len;                 //UserData数据的长度
+								//Udata的数据就存在于Udata结构的后边
   } uv;
 } Udata;
 

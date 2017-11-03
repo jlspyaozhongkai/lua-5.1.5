@@ -18,21 +18,26 @@
 #include "lstring.h"
 
 
-
+//将全局字符串hash table进行resize（尝试）
 void luaS_resize (lua_State *L, int newsize) {
   GCObject **newhash;
   stringtable *tb;
   int i;
+  //如果正在gc则放弃本次尝试
   if (G(L)->gcstate == GCSsweepstring)
     return;  /* cannot resize during GC traverse */
+  //分配hash表
   newhash = luaM_newvector(L, newsize, GCObject *);
+  //全局字符串管理表
   tb = &G(L)->strt;
+  //初始化hash表
   for (i=0; i<newsize; i++) newhash[i] = NULL;
   /* rehash */
   for (i=0; i<tb->size; i++) {
     GCObject *p = tb->hash[i];
     while (p) {  /* for each node in the list */
       GCObject *next = p->gch.next;  /* save next */
+	  //遍历TString链表，取得hash，重新找位置
       unsigned int h = gco2ts(p)->hash;
       int h1 = lmod(h, newsize);  /* new position */
       lua_assert(cast_int(h%newsize) == lmod(h, newsize));
@@ -41,6 +46,7 @@ void luaS_resize (lua_State *L, int newsize) {
       p = next;
     }
   }
+  //释放和更新
   luaM_freearray(L, tb->hash, tb->size, TString *);
   tb->size = newsize;
   tb->hash = newhash;
@@ -53,21 +59,22 @@ static TString *newlstr (lua_State *L, const char *str, size_t l,
   stringtable *tb;
   if (l+1 > (MAX_SIZET - sizeof(TString))/sizeof(char))
     luaM_toobig(L);		//超大，异常的处理值得研究
-  //
+  //分配内存，包括TString和后边的字符串，另加一个\0
   ts = cast(TString *, luaM_malloc(L, (l+1)*sizeof(char)+sizeof(TString)));
-  ts->tsv.len = l;
-  ts->tsv.hash = h;
-  ts->tsv.marked = luaC_white(G(L));
+  ts->tsv.len = l;						//字符串的长度
+  ts->tsv.hash = h;						//hash是外边传过来的
+  ts->tsv.marked = luaC_white(G(L));	//设定三个gc头
   ts->tsv.tt = LUA_TSTRING;
   ts->tsv.reserved = 0;
-  memcpy(ts+1, str, l*sizeof(char));
+  memcpy(ts+1, str, l*sizeof(char));			//拷贝内存
   ((char *)(ts+1))[l] = '\0';  /* ending 0 */
-  tb = &G(L)->strt;
+  tb = &G(L)->strt;								//保存到全局表
   h = lmod(h, tb->size);
   ts->tsv.next = tb->hash[h];  /* chain new entry */
   tb->hash[h] = obj2gco(ts);
-  tb->nuse++;
-  if (tb->nuse > cast(lu_int32, tb->size) && tb->size <= MAX_INT/2)
+  tb->nuse++;									//维护计数
+  //当字符串数量大于hash表尺寸，切不是往死大的时候，就扩充一下
+  if (tb->nuse > cast(lu_int32, tb->size) && tb->size <= MAX_INT/2)	
     luaS_resize(L, tb->size*2);  /* too crowded */
   return ts;
 }
@@ -97,18 +104,24 @@ TString *luaS_newlstr (lua_State *L, const char *str, size_t l) {
   return newlstr(L, str, l, h);  /* not found */	//全新造一个字符串
 }
 
-
+//虽不知Table *e为何物，但是这个函数的功能是根据给定的尺寸造UData，就如同TString
+//要不为什么放这个文件里
 Udata *luaS_newudata (lua_State *L, size_t s, Table *e) {
   Udata *u;
   if (s > MAX_SIZET - sizeof(Udata))
-    luaM_toobig(L);
+    luaM_toobig(L);				//尺寸太大了不行
+  //分配内存，这个不需要多一个\0
   u = cast(Udata *, luaM_malloc(L, s + sizeof(Udata)));
+
+  //设置Gc头
   u->uv.marked = luaC_white(G(L));  /* is not finalized */
   u->uv.tt = LUA_TUSERDATA;
+  //设置Udata数据
   u->uv.len = s;
   u->uv.metatable = NULL;
   u->uv.env = e;
   /* chain it on udata list (after main thread) */
+  //挂在一个lua_State中的链表了，估计和释放有关
   u->uv.next = G(L)->mainthread->next;
   G(L)->mainthread->next = obj2gco(u);
   return u;
