@@ -69,17 +69,18 @@ typedef void * (*lua_Alloc) (void *ud, void *ptr, size_t osize, size_t nsize);
 /*
 ** basic types
 */
-#define LUA_TNONE		(-1)
+#define LUA_TNONE		(-1)			//数据类型，什么都不类型
 
-#define LUA_TNIL		0
-#define LUA_TBOOLEAN		1
-#define LUA_TLIGHTUSERDATA	2
-#define LUA_TNUMBER		3
-#define LUA_TSTRING		4
-#define LUA_TTABLE		5
-#define LUA_TFUNCTION		6
-#define LUA_TUSERDATA		7
-#define LUA_TTHREAD		8
+#define LUA_TNIL		0				//数据类型nil
+#define LUA_TBOOLEAN		1			//数据类型bool型
+#define LUA_TLIGHTUSERDATA	2			//数据类型指针
+#define LUA_TNUMBER		3				//数据类型number
+//从这个位置往上的是不需要gc的，从这个位置往下的是需要gc的
+#define LUA_TSTRING		4				//需要回收的string
+#define LUA_TTABLE		5				//需要回收的table
+#define LUA_TFUNCTION		6			//需要回收的函数，函数第一类值，是可以执行的数据
+#define LUA_TUSERDATA		7			//需要回收的 通用数据
+#define LUA_TTHREAD		8				//需要回收的 伪线程
 
 
 

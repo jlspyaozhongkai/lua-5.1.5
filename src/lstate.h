@@ -34,11 +34,11 @@ struct lua_longjmp;  /* defined in ldo.c */
 #define BASIC_STACK_SIZE        (2*LUA_MINSTACK)
 
 
-
+//全局的字符串标
 typedef struct stringtable {
-  GCObject **hash;
-  lu_int32 nuse;  /* number of elements */
-  int size;
+  GCObject **hash;							//GCObject *数据的数组
+  lu_int32 nuse;  /* number of elements */	//表中字符串的数量，计数，用于调整hashkey尺寸
+  int size;									//hash表的尺寸
 } stringtable;
 
 
@@ -65,7 +65,9 @@ typedef struct CallInfo {
 /*
 ** `global state', shared by all threads of this state
 */
+//所有的lua_State 都共用的结构
 typedef struct global_State {
+  //全局的字符串表
   stringtable strt;  /* hash table for strings */
   lua_Alloc frealloc;  /* function to reallocate memory */
   void *ud;         /* auxiliary data to `frealloc' */
@@ -97,6 +99,7 @@ typedef struct global_State {
 /*
 ** `per thread' state
 */
+//这是一个虚拟机一类的结构
 struct lua_State {
   CommonHeader;
   lu_byte status;
@@ -126,26 +129,30 @@ struct lua_State {
   ptrdiff_t errfunc;  /* current error handling function (stack index) */
 };
 
-
+//lua_State 里都有一个global_State *l_G; 这个恐怕是所有lua_State共用的
 #define G(L)	(L->l_G)
 
 
 /*
 ** Union of all collectable objects
 */
+//所有的要gc类型，都包在这个共用里，各个类型都包含CommonHeader中
+//GCheader特殊，仅仅是为了方便使用CommonHeader，就是读取TString等其他类型的CommonHeader时，通过它。
+//这里的union估计是做个样子，没人会直接分配GCObject，而是各分配各的，然互当GCObject用
 union GCObject {
-  GCheader gch;
-  union TString ts;
-  union Udata u;
-  union Closure cl;
-  struct Table h;
-  struct Proto p;
-  struct UpVal uv;
-  struct lua_State th;  /* thread */
+  GCheader gch;								//其他各个值的公共头CommonHeader的代表
+  union TString ts;							//需要gc的string数据部，ts表示TString
+  union Udata u;							//需要gc的userdata，u表示Udata
+  union Closure cl;							//需要gc的Closure，cl表示Closure，和函数差不多
+  struct Table h;							//需要gc的Table，h表示Table是几个意思
+  struct Proto p;							//需要gc的Prototypes
+  struct UpVal uv;							//
+  struct lua_State th;  /* thread */		//线程
 };
 
 
 /* macros to convert a GCObject into a specific value */
+//通过GCObject有检查的返回string对象
 #define rawgco2ts(o)	check_exp((o)->gch.tt == LUA_TSTRING, &((o)->ts))
 #define gco2ts(o)	(&rawgco2ts(o)->tsv)
 #define rawgco2u(o)	check_exp((o)->gch.tt == LUA_TUSERDATA, &((o)->u))

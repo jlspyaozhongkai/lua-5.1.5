@@ -46,13 +46,14 @@ void luaS_resize (lua_State *L, int newsize) {
   tb->hash = newhash;
 }
 
-
+//全新造一个TString
 static TString *newlstr (lua_State *L, const char *str, size_t l,
                                        unsigned int h) {
   TString *ts;
   stringtable *tb;
   if (l+1 > (MAX_SIZET - sizeof(TString))/sizeof(char))
-    luaM_toobig(L);
+    luaM_toobig(L);		//超大，异常的处理值得研究
+  //
   ts = cast(TString *, luaM_malloc(L, (l+1)*sizeof(char)+sizeof(TString)));
   ts->tsv.len = l;
   ts->tsv.hash = h;
@@ -71,25 +72,29 @@ static TString *newlstr (lua_State *L, const char *str, size_t l,
   return ts;
 }
 
-
+//根据char * 创建TString
 TString *luaS_newlstr (lua_State *L, const char *str, size_t l) {
   GCObject *o;
+  //首先对输入的字符串取hash，且是有规律的有选择的计算hash,跳着做
   unsigned int h = cast(unsigned int, l);  /* seed */
   size_t step = (l>>5)+1;  /* if string is too long, don't hash all its chars */
   size_t l1;
   for (l1=l; l1>=step; l1-=step)  /* compute hash */
     h = h ^ ((h<<5)+(h>>2)+cast(unsigned char, str[l1-1]));
+  //从hashkey开始找到或者找不到的第一个节点一路向后
   for (o = G(L)->strt.hash[lmod(h, G(L)->strt.size)];
        o != NULL;
        o = o->gch.next) {
+    //取得TString对象
     TString *ts = rawgco2ts(o);
+	//长度相同的情况下，比对字符串的内容
     if (ts->tsv.len == l && (memcmp(str, getstr(ts), l) == 0)) {
       /* string may be dead */
-      if (isdead(G(L), o)) changewhite(o);
+      if (isdead(G(L), o)) changewhite(o);		//如果在死，则需要救活
       return ts;
     }
   }
-  return newlstr(L, str, l, h);  /* not found */
+  return newlstr(L, str, l, h);  /* not found */	//全新造一个字符串
 }
 
 

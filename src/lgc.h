@@ -67,6 +67,7 @@
 #define isgray(x)	(!isblack(x) && !iswhite(x))
 
 #define otherwhite(g)	(g->currentwhite ^ WHITEBITS)
+//GCObject对象的gc头上的gc标记
 #define isdead(g,v)	((v)->gch.marked & otherwhite(g) & WHITEBITS)
 
 #define changewhite(x)	((x)->gch.marked ^= WHITEBITS)
