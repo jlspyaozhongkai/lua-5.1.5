@@ -69,7 +69,7 @@ typedef struct CallInfo {
 typedef struct global_State {
   //全局的字符串表
   stringtable strt;  /* hash table for strings */
-  lua_Alloc frealloc;  /* function to reallocate memory */
+  lua_Alloc frealloc;  /* function to reallocate memory */					//全局的内存分配函数，也管释放
   void *ud;         /* auxiliary data to `frealloc' */
   lu_byte currentwhite;
   lu_byte gcstate;  /* state of garbage collector */
@@ -82,7 +82,7 @@ typedef struct global_State {
   GCObject *tmudata;  /* last element of list of userdata to be GC */
   Mbuffer buff;  /* temporary buffer for string concatentation */
   lu_mem GCthreshold;
-  lu_mem totalbytes;  /* number of bytes currently allocated */
+  lu_mem totalbytes;  /* number of bytes currently allocated */				//内存分配计数
   lu_mem estimate;  /* an estimate of number of bytes actually in use */
   lu_mem gcdept;  /* how much GC is `behind schedule' */
   int gcpause;  /* size of pause between successive GCs */

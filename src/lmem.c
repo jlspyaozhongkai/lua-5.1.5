@@ -42,24 +42,25 @@
 
 #define MINSIZEARRAY	4
 
-
+//对数据进行调整
 void *luaM_growaux_ (lua_State *L, void *block, int *size, size_t size_elems,
                      int limit, const char *errormsg) {
   void *newblock;
   int newsize;
   if (*size >= limit/2) {  /* cannot double it? */
-    if (*size >= limit)  /* cannot grow even a little? */
+  	//有点大
+    if (*size >= limit)  /* cannot grow even a little? */			//太大了
       luaG_runerror(L, errormsg);
-    newsize = limit;  /* still have at least one free place */
+    newsize = limit;  /* still have at least one free place */		//怎么也不能超过limit
   }
   else {
-    newsize = (*size)*2;
-    if (newsize < MINSIZEARRAY)
+    newsize = (*size)*2;											//二倍大小
+    if (newsize < MINSIZEARRAY)										//不要太小
       newsize = MINSIZEARRAY;  /* minimum size */
   }
-  newblock = luaM_reallocv(L, block, *size, newsize, size_elems);
-  *size = newsize;  /* update only when everything else is OK */
-  return newblock;
+  newblock = luaM_reallocv(L, block, *size, newsize, size_elems);	//释放旧的，创建新的，size都基于size_elems
+  *size = newsize;  /* update only when everything else is OK */	//更新尺寸
+  return newblock;													//返回新内存
 }
 
 
@@ -73,11 +74,13 @@ void *luaM_toobig (lua_State *L) {
 /*
 ** generic allocation routine.
 */
+//分配或者释放内存
 void *luaM_realloc_ (lua_State *L, void *block, size_t osize, size_t nsize) {
   global_State *g = G(L);
   lua_assert((osize == 0) == (block == NULL));
+  //从lua_State找到内存函数，然后开始分配或者释放
   block = (*g->frealloc)(g->ud, block, osize, nsize);
-  if (block == NULL && nsize > 0)
+  if (block == NULL && nsize > 0)	//如果分配失败的话
     luaD_throw(L, LUA_ERRMEM);
   lua_assert((nsize == 0) == (block == NULL));
   g->totalbytes = (g->totalbytes - osize) + nsize;
