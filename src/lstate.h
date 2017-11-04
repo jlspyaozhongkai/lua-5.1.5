@@ -74,7 +74,7 @@ typedef struct global_State {
   lu_byte currentwhite;
   lu_byte gcstate;  /* state of garbage collector */
   int sweepstrgc;  /* position of sweep in `strt' */
-  GCObject *rootgc;  /* list of all collectable objects */
+  GCObject *rootgc;  /* list of all collectable objects */					//Gc对象登记的对象
   GCObject **sweepgc;  /* position of sweep in `rootgc' */
   GCObject *gray;  /* list of gray objects */
   GCObject *grayagain;  /* list of objects to be traversed atomically */

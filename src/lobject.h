@@ -360,32 +360,32 @@ typedef union Closure {
 /*
 ** Tables
 */
-
+//map 表项的key，不只是关联一个key数据，还要组织hash链表
 typedef union TKey {
   struct {
-    TValuefields;
-    struct Node *next;  /* for chaining */
+    TValuefields;							//和TValue相同，只是拿出来用了
+    struct Node *next;  /* for chaining */	//指向下一个Node
   } nk;
-  TValue tvk;
+  TValue tvk;								//当把TKey当TValue来用，忽视后边的next，就是使用这个成员
 } TKey;
 
-
+//Table map 的key value 组合
 typedef struct Node {
-  TValue i_val;
-  TKey i_key;
+  TValue i_val;								//map表项的值
+  TKey i_key;								//map表项的key
 } Node;
 
 //Table结构
 typedef struct Table {
   CommonHeader;														//公共头
-  lu_byte flags;  /* 1<<p means tagmethod(p) is not present */ 
-  lu_byte lsizenode;  /* log2 of size of `node' array */
-  struct Table *metatable;
-  TValue *array;  /* array part */
-  Node *node;
-  Node *lastfree;  /* any free position is before this position */
-  GCObject *gclist;
-  int sizearray;  /* size of `array' array */
+  lu_byte flags;  /* 1<<p means tagmethod(p) is not present */ 		//元方法bit位，首次使用时更新，有bit代表未设置
+  lu_byte lsizenode;  /* log2 of size of `node' array */			//map表大小，2的lsizenode次幂个，其实很大
+  struct Table *metatable;											//表的元表
+  TValue *array;  /* array part */									//表数组部分的指针数组
+  Node *node;														//map表，node数组
+  Node *lastfree;  /* any free position is before this position */	//lastfree所指向是过界的，不安全的
+  GCObject *gclist;													//
+  int sizearray;  /* size of `array' array */						//表数组部分的指针数组长度
 } Table;
 
 
@@ -398,15 +398,18 @@ typedef struct Table {
 #define lmod(s,size) \
 	(check_exp((size&(size-1))==0, (cast(int, (s) & ((size)-1)))))
 
-
+//2的x幂，计算size
 #define twoto(x)	(1<<(x))
+//看 Tablie 中的lsizenode，这个宏是对Table求map size
 #define sizenode(t)	(twoto((t)->lsizenode))
 
-
+//这样nil和nil就相等了，同时也能统一处理
 #define luaO_nilobject		(&luaO_nilobject_)
 
+//声明之
 LUAI_DATA const TValue luaO_nilobject_;
 
+//给Table的map 按照项数量，计算以2为底的log值（往大分，先减后加）
 #define ceillog2(x)	(luaO_log2((x)-1) + 1)
 
 LUAI_FUNC int luaO_log2 (unsigned int x);

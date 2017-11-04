@@ -23,7 +23,7 @@
 #include "lvm.h"
 
 
-
+//和 #define TValuefields	Value value; int tt 对号，一个nil object
 const TValue luaO_nilobject_ = {{NULL}, LUA_TNIL};
 
 
@@ -51,6 +51,7 @@ int luaO_fb2int (int x) {
 }
 
 
+//计算log2的值
 int luaO_log2 (unsigned int x) {
   static const lu_byte log_2[256] = {
     0,1,2,2,3,3,3,3,4,4,4,4,4,4,4,4,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,
@@ -63,6 +64,7 @@ int luaO_log2 (unsigned int x) {
     8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8
   };
   int l = -1;
+  //大于256的部分，8位8个计数
   while (x >= 256) { l += 8; x >>= 8; }
   return l + log_2[x];
 

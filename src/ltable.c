@@ -69,9 +69,10 @@
 #define numints		cast_int(sizeof(lua_Number)/sizeof(int))
 
 
-
+//哑表项通常作为指针使用
 #define dummynode		(&dummynode_)
 
+//Table map 的哑表项目
 static const Node dummynode_ = {
   {{NULL}, LUA_TNIL},  /* value */
   {{{NULL}, LUA_TNIL, NULL}}  /* key */
@@ -259,16 +260,18 @@ static int numusehash (const Table *t, int *nums, int *pnasize) {
   return totaluse;
 }
 
-
+//给Table array分配内存，有时候是重新分配内存
 static void setarrayvector (lua_State *L, Table *t, int size) {
   int i;
   luaM_reallocvector(L, t->array, t->sizearray, size, TValue);
+  //新增部分设置为nil
   for (i=t->sizearray; i<size; i++)
      setnilvalue(&t->array[i]);
+  //更新长度
   t->sizearray = size;
 }
 
-
+//给Table map分配内存
 static void setnodevector (lua_State *L, Table *t, int size) {
   int lsize;
   if (size == 0) {  /* no elements to hash part? */
@@ -277,16 +280,18 @@ static void setnodevector (lua_State *L, Table *t, int size) {
   }
   else {
     int i;
+	//计算log值
     lsize = ceillog2(size);
     if (lsize > MAXBITS)
       luaG_runerror(L, "table overflow");
+	//重新计算size
     size = twoto(lsize);
     t->node = luaM_newvector(L, size, Node);
     for (i=0; i<size; i++) {
-      Node *n = gnode(t, i);
-      gnext(n) = NULL;
-      setnilvalue(gkey(n));
-      setnilvalue(gval(n));
+      Node *n = gnode(t, i);		//Table map表，表项的指针
+      gnext(n) = NULL;				//下一个节点是空
+      setnilvalue(gkey(n));			//当前节点的key为nil
+      setnilvalue(gval(n));			//当前节点的值设置为nil
     }
   }
   t->lsizenode = cast_byte(lsize);
@@ -294,26 +299,35 @@ static void setnodevector (lua_State *L, Table *t, int size) {
 }
 
 
+//给table的数组做resize，指定了: array的size 和 hash 的size
 static void resize (lua_State *L, Table *t, int nasize, int nhsize) {
   int i;
   int oldasize = t->sizearray;
   int oldhsize = t->lsizenode;
-  Node *nold = t->node;  /* save old hash ... */
+  Node *nold = t->node;  /* save old hash ... */		//这里保存了旧hash
+  //数组部分，有增大就 growup
   if (nasize > oldasize)  /* array part must grow? */
     setarrayvector(L, t, nasize);
+  
   /* create new hash part with appropriate size */
+  //这里分配就了新hash
   setnodevector(L, t, nhsize);  
+
+  //如果map size变小了
   if (nasize < oldasize) {  /* array part must shrink? */
     t->sizearray = nasize;
     /* re-insert elements from vanishing slice */
+    //对于多出来的部分，且不是nil的，归拢到前边的位置去
     for (i=nasize; i<oldasize; i++) {
       if (!ttisnil(&t->array[i]))
         setobjt2t(L, luaH_setnum(L, t, i+1), &t->array[i]);
     }
     /* shrink array */
+	//缩小table数组
     luaM_reallocvector(L, t->array, oldasize, nasize, TValue);
   }
   /* re-insert elements from hash part */
+  //遍历所有旧的table map 项目，定位到旧node，转移到新map数组
   for (i = twoto(oldhsize) - 1; i >= 0; i--) {
     Node *old = nold+i;
     if (!ttisnil(gval(old)))
@@ -324,6 +338,7 @@ static void resize (lua_State *L, Table *t, int nasize, int nhsize) {
 }
 
 
+//给Table的数组 resize
 void luaH_resizearray (lua_State *L, Table *t, int nasize) {
   int nsize = (t->node == dummynode) ? 0 : sizenode(t);
   resize(L, t, nasize, nsize);
@@ -354,27 +369,34 @@ static void rehash (lua_State *L, Table *t, const TValue *ek) {
 ** }=============================================================
 */
 
-
+//创建Table
 Table *luaH_new (lua_State *L, int narray, int nhash) {
+  //分内存
   Table *t = luaM_new(L, Table);
+  //向lua_State登记这个Table
   luaC_link(L, obj2gco(t), LUA_TTABLE);
   t->metatable = NULL;
   t->flags = cast_byte(~0);
+  //先给配置个临时值
   /* temporary values (kept only if some malloc fails) */
   t->array = NULL;
   t->sizearray = 0;
   t->lsizenode = 0;
   t->node = cast(Node *, dummynode);
+  //分配内存
   setarrayvector(L, t, narray);
   setnodevector(L, t, nhash);
   return t;
 }
 
-
+//释放Table
 void luaH_free (lua_State *L, Table *t) {
+  //释放map表
   if (t->node != dummynode)
     luaM_freearray(L, t->node, sizenode(t), Node);
+  //释放数组表
   luaM_freearray(L, t->array, t->sizearray, TValue);
+  //释放掉表
   luaM_free(L, t);
 }
 

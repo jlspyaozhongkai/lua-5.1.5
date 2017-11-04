@@ -681,10 +681,10 @@ void luaC_barrierback (lua_State *L, Table *t) {
   g->grayagain = o;
 }
 
-
+//将Gc对象登记到lua_State
 void luaC_link (lua_State *L, GCObject *o, lu_byte tt) {
-  global_State *g = G(L);
-  o->gch.next = g->rootgc;
+  global_State *g = G(L);				//这个登记是全局的
+  o->gch.next = g->rootgc;				//做登记
   g->rootgc = o;
   o->gch.marked = luaC_white(g);
   o->gch.tt = tt;
