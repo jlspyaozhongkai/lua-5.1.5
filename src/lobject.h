@@ -226,7 +226,7 @@ typedef struct lua_TValue {
 #define iscollectable(o)	(ttype(o) >= LUA_TSTRING)
 
 
-
+//StkId 就是stack idx 之value
 typedef TValue *StkId;  /* index to stack elements */
 
 

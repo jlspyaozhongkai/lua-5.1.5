@@ -45,12 +45,12 @@ const char lua_ident[] =
 #define api_incr_top(L)   {api_check(L, L->top < L->ci->top); L->top++;}
 
 
-
+//调用栈上
 static TValue *index2adr (lua_State *L, int idx) {
   if (idx > 0) {
-    TValue *o = L->base + (idx - 1);
+    TValue *o = L->base + (idx - 1);						//从栈底往上数，找到栈中的值
     api_check(L, idx <= L->ci->top - L->base);
-    if (o >= L->top) return cast(TValue *, luaO_nilobject);
+    if (o >= L->top) return cast(TValue *, luaO_nilobject);	//如果大于等于top，top已经是free的了，就是超了，返回nil
     else return o;
   }
   else if (idx > LUA_REGISTRYINDEX) {
@@ -238,7 +238,7 @@ LUA_API void lua_pushvalue (lua_State *L, int idx) {
 ** access functions (stack -> C)
 */
 
-
+//先取对象，再取其type
 LUA_API int lua_type (lua_State *L, int idx) {
   StkId o = index2adr(L, idx);
   return (o == luaO_nilobject) ? LUA_TNONE : ttype(o);

@@ -45,10 +45,11 @@ typedef struct stringtable {
 /*
 ** informations about a call
 */
+//函数调用信息
 typedef struct CallInfo {
   StkId base;  /* base for this function */
   StkId func;  /* function index in the stack */
-  StkId	top;  /* top for this function */
+  StkId	top;  /* top for this function */								//调用栈的栈顶
   const Instruction *savedpc;
   int nresults;  /* expected number of results from this function */
   int tailcalls;  /* number of tail calls lost under this entry */
@@ -103,10 +104,10 @@ typedef struct global_State {
 struct lua_State {
   CommonHeader;
   lu_byte status;
-  StkId top;  /* first free slot in the stack */
-  StkId base;  /* base of current function */
-  global_State *l_G;
-  CallInfo *ci;  /* call info for current function */
+  StkId top;  /* first free slot in the stack */							//调用栈的栈定
+  StkId base;  /* base of current function */								//当前函数，调用栈的栈底，StkId 就是TValue的指针。
+  global_State *l_G;														//每个调用栈都共用一个全局资源对象
+  CallInfo *ci;  /* call info for current function */						//当前的调用函数info
   const Instruction *savedpc;  /* `savedpc' of current function */
   StkId stack_last;  /* last free slot in the stack */
   StkId stack;  /* stack base */

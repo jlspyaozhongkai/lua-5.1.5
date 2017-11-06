@@ -263,7 +263,9 @@ LUA_API void lua_setallocf (lua_State *L, lua_Alloc f, void *ud);
 
 #define lua_strlen(L,i)		lua_objlen(L, (i))
 
+//判断栈上值是否为function
 #define lua_isfunction(L,n)	(lua_type(L, (n)) == LUA_TFUNCTION)
+//
 #define lua_istable(L,n)	(lua_type(L, (n)) == LUA_TTABLE)
 #define lua_islightuserdata(L,n)	(lua_type(L, (n)) == LUA_TLIGHTUSERDATA)
 #define lua_isnil(L,n)		(lua_type(L, (n)) == LUA_TNIL)
