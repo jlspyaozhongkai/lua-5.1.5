@@ -530,17 +530,17 @@
 */
 #if defined(LUA_CORE)
 #include <math.h>
-#define luai_numadd(a,b)	((a)+(b))
-#define luai_numsub(a,b)	((a)-(b))
-#define luai_nummul(a,b)	((a)*(b))
-#define luai_numdiv(a,b)	((a)/(b))
-#define luai_nummod(a,b)	((a) - floor((a)/(b))*(b))
-#define luai_numpow(a,b)	(pow(a,b))
-#define luai_numunm(a)		(-(a))
-#define luai_numeq(a,b)		((a)==(b))
-#define luai_numlt(a,b)		((a)<(b))
-#define luai_numle(a,b)		((a)<=(b))
-#define luai_numisnan(a)	(!luai_numeq((a), (a)))
+#define luai_numadd(a,b)	((a)+(b))						//lua_Number 加
+#define luai_numsub(a,b)	((a)-(b))						//lua_Number 减
+#define luai_nummul(a,b)	((a)*(b))						//lua_Number 乘
+#define luai_numdiv(a,b)	((a)/(b))						//lua_Number 除
+#define luai_nummod(a,b)	((a) - floor((a)/(b))*(b))		//lua_Number 求余
+#define luai_numpow(a,b)	(pow(a,b))						//lua_Number a的b次幂
+#define luai_numunm(a)		(-(a))							//lua_Number 负
+#define luai_numeq(a,b)		((a)==(b))						//lua_Number 相等
+#define luai_numlt(a,b)		((a)<(b))						//lua_Number 小于
+#define luai_numle(a,b)		((a)<=(b))						//lua_Number 小于等于
+#define luai_numisnan(a)	(!luai_numeq((a), (a)))			//lua_Number 不 相等
 #endif
 
 
@@ -560,8 +560,8 @@
 /* On a Microsoft compiler, use assembler */
 #if defined(_MSC_VER)
 
-#define lua_number2int(i,d)   __asm fld d   __asm fistp i
-#define lua_number2integer(i,n)		lua_number2int(i, n)
+#define lua_number2int(i,d)   __asm fld d   __asm fistp i	//lua_Number 转int
+#define lua_number2integer(i,n)		lua_number2int(i, n)	//lua_Number 转int
 
 /* the next trick should work on any Pentium, but sometimes clashes
    with a DirectX idiosyncrasy */
@@ -569,8 +569,9 @@
 
 union luai_Cast { double l_d; long l_l; };
 #define lua_number2int(i,d) \
-  { volatile union luai_Cast u; u.l_d = (d) + 6755399441055744.0; (i) = u.l_l; }
-#define lua_number2integer(i,n)		lua_number2int(i, n)
+  { volatile union luai_Cast u; u.l_d = (d) + 6755399441055744.0; (i) = u.l_l; }	//lua_Number 转int
+#define lua_number2integer(i,n)		lua_number2int(i, n)							//lua_Number 转int
+
 
 #endif
 

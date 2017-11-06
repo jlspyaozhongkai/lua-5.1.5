@@ -98,11 +98,11 @@ typedef void * (*lua_Alloc) (void *ud, void *ptr, size_t osize, size_t nsize);
 
 
 /* type of numbers in Lua */
-typedef LUA_NUMBER lua_Number;
+typedef LUA_NUMBER lua_Number;					//Lua 的number类型，一般是double类型
 
 
 /* type for integer functions */
-typedef LUA_INTEGER lua_Integer;
+typedef LUA_INTEGER lua_Integer;				//好像是做指针用的
 
 
 

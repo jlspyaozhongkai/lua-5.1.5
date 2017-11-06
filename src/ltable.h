@@ -20,19 +20,28 @@
 //Table 的key是一个值和next的组合，这里只取其值的部分，忽视next
 #define key2tval(n)	(&(n)->i_key.tvk)
 
-
+//通过数值索引读取table值
 LUAI_FUNC const TValue *luaH_getnum (Table *t, int key);
+//通过数值索引往table里设置值，其实是将TValue返回，你自己改或者不改
 LUAI_FUNC TValue *luaH_setnum (lua_State *L, Table *t, int key);
+
+//通过string读取table的值
 LUAI_FUNC const TValue *luaH_getstr (Table *t, TString *key);
+//通过string往table里设置值，其实是将TValue返回，你自己改或者不改
 LUAI_FUNC TValue *luaH_setstr (lua_State *L, Table *t, TString *key);
+
+//通过通用值作为索引读取table的值
 LUAI_FUNC const TValue *luaH_get (Table *t, const TValue *key);
+//通过通用值作为索引往table里写
 LUAI_FUNC TValue *luaH_set (lua_State *L, Table *t, const TValue *key);
+
 //创建Table 根据数组 和 map的 项数
 LUAI_FUNC Table *luaH_new (lua_State *L, int narray, int lnhash);
 //给Table的数组resize
 LUAI_FUNC void luaH_resizearray (lua_State *L, Table *t, int nasize);
 //释放Table
 LUAI_FUNC void luaH_free (lua_State *L, Table *t);
+
 LUAI_FUNC int luaH_next (lua_State *L, Table *t, StkId key);
 LUAI_FUNC int luaH_getn (Table *t);
 

@@ -381,11 +381,11 @@ typedef struct Table {
   lu_byte flags;  /* 1<<p means tagmethod(p) is not present */ 		//元方法bit位，首次使用时更新，有bit代表未设置
   lu_byte lsizenode;  /* log2 of size of `node' array */			//map表大小，2的lsizenode次幂个，其实很大
   struct Table *metatable;											//表的元表
-  TValue *array;  /* array part */									//表数组部分的指针数组
+  TValue *array;  /* array part */									//表数组部分的TValue们
   Node *node;														//map表，node数组
   Node *lastfree;  /* any free position is before this position */	//lastfree所指向是过界的，不安全的
   GCObject *gclist;													//
-  int sizearray;  /* size of `array' array */						//表数组部分的指针数组长度
+  int sizearray;  /* size of `array' array */						//表数组部分的指针数组长度，内部下标还是从0开始的
 } Table;
 
 
@@ -393,14 +393,13 @@ typedef struct Table {
 /*
 ** `module' operation for hashing (size is always a power of 2)
 */
-//hash查找的时候取模值，先断言检查 (size&(size-1))==0，size必须是2的n次
-//然互只保留被size掩住的部分
+//hash查找的时候取模值，先断言检查 (size&(size-1))==0，size必须是2的n次，只保留被size掩住的部分
 #define lmod(s,size) \
 	(check_exp((size&(size-1))==0, (cast(int, (s) & ((size)-1)))))
 
-//2的x幂，计算size
+//2的x幂
 #define twoto(x)	(1<<(x))
-//看 Tablie 中的lsizenode，这个宏是对Table求map size
+//求Table的hash表尺寸
 #define sizenode(t)	(twoto((t)->lsizenode))
 
 //这样nil和nil就相等了，同时也能统一处理
