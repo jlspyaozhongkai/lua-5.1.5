@@ -83,16 +83,15 @@ typedef struct lua_TValue {
 
 
 /* Macros to test type */
-//检查是否是各种数据类型
-#define ttisnil(o)	(ttype(o) == LUA_TNIL)
-#define ttisnumber(o)	(ttype(o) == LUA_TNUMBER)
-#define ttisstring(o)	(ttype(o) == LUA_TSTRING)
-#define ttistable(o)	(ttype(o) == LUA_TTABLE)
-#define ttisfunction(o)	(ttype(o) == LUA_TFUNCTION)
-#define ttisboolean(o)	(ttype(o) == LUA_TBOOLEAN)
-#define ttisuserdata(o)	(ttype(o) == LUA_TUSERDATA)
-#define ttisthread(o)	(ttype(o) == LUA_TTHREAD)
-#define ttislightuserdata(o)	(ttype(o) == LUA_TLIGHTUSERDATA)
+#define ttisnil(o)	(ttype(o) == LUA_TNIL)						//检查是否是各种数据类型
+#define ttisnumber(o)	(ttype(o) == LUA_TNUMBER)				//检查是否是各种数据类型
+#define ttisstring(o)	(ttype(o) == LUA_TSTRING)				//检查是否是各种数据类型
+#define ttistable(o)	(ttype(o) == LUA_TTABLE)				//检查是否是各种数据类型
+#define ttisfunction(o)	(ttype(o) == LUA_TFUNCTION)				//检查是否是各种数据类型
+#define ttisboolean(o)	(ttype(o) == LUA_TBOOLEAN)				//检查是否是各种数据类型
+#define ttisuserdata(o)	(ttype(o) == LUA_TUSERDATA)				//检查是否是各种数据类型
+#define ttisthread(o)	(ttype(o) == LUA_TTHREAD)				//检查是否是各种数据类型
+#define ttislightuserdata(o)	(ttype(o) == LUA_TLIGHTUSERDATA)//检查是否是各种数据类型
 
 /* Macros to access values */
 //输入TValue返回其类型
@@ -353,7 +352,9 @@ typedef union Closure {
 } Closure;
 
 
+//是否为c 函数
 #define iscfunction(o)	(ttype(o) == LUA_TFUNCTION && clvalue(o)->c.isC)
+//是否为lua函数
 #define isLfunction(o)	(ttype(o) == LUA_TFUNCTION && !clvalue(o)->c.isC)
 
 

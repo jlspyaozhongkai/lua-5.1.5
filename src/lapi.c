@@ -45,7 +45,7 @@ const char lua_ident[] =
 #define api_incr_top(L)   {api_check(L, L->top < L->ci->top); L->top++;}
 
 
-//调用栈上
+//调用栈上指定位置的变量
 static TValue *index2adr (lua_State *L, int idx) {
   if (idx > 0) {
     TValue *o = L->base + (idx - 1);						//从栈底往上数，找到栈中的值
@@ -244,38 +244,40 @@ LUA_API int lua_type (lua_State *L, int idx) {
   return (o == luaO_nilobject) ? LUA_TNONE : ttype(o);
 }
 
-
+//调用栈上值得type, 但是返回的是字符串（描述信息）
 LUA_API const char *lua_typename (lua_State *L, int t) {
   UNUSED(L);
   return (t == LUA_TNONE) ? "no value" : luaT_typenames[t];
 }
 
-
+//调用栈上的值是否为c函数
 LUA_API int lua_iscfunction (lua_State *L, int idx) {
   StkId o = index2adr(L, idx);
   return iscfunction(o);
 }
 
-
+//调用栈上值是否为number
 LUA_API int lua_isnumber (lua_State *L, int idx) {
   TValue n;
   const TValue *o = index2adr(L, idx);
-  return tonumber(o, &n);
+  return tonumber(o, &n);	//往n上边转，将是否成功返回，不看类型是因为会尝试转换string
 }
 
-
+//调用栈上值是否为string
 LUA_API int lua_isstring (lua_State *L, int idx) {
   int t = lua_type(L, idx);
+  //这个，number类型居然可以无障碍的是string，长见识。
   return (t == LUA_TSTRING || t == LUA_TNUMBER);
 }
 
-
+//调用栈上值是否为指针
 LUA_API int lua_isuserdata (lua_State *L, int idx) {
   const TValue *o = index2adr(L, idx);
+  //userdata和指针，都是userdata
   return (ttisuserdata(o) || ttislightuserdata(o));
 }
 
-
+//调用栈上 两值 底层比较
 LUA_API int lua_rawequal (lua_State *L, int index1, int index2) {
   StkId o1 = index2adr(L, index1);
   StkId o2 = index2adr(L, index2);
@@ -283,7 +285,7 @@ LUA_API int lua_rawequal (lua_State *L, int index1, int index2) {
          : luaO_rawequalObj(o1, o2);
 }
 
-
+//调用栈上 两值是否相等
 LUA_API int lua_equal (lua_State *L, int index1, int index2) {
   StkId o1, o2;
   int i;
@@ -309,7 +311,7 @@ LUA_API int lua_lessthan (lua_State *L, int index1, int index2) {
 }
 
 
-
+//调用栈上值 转 number，转换失败就返回数值0
 LUA_API lua_Number lua_tonumber (lua_State *L, int idx) {
   TValue n;
   const TValue *o = index2adr(L, idx);
@@ -319,30 +321,30 @@ LUA_API lua_Number lua_tonumber (lua_State *L, int idx) {
     return 0;
 }
 
-
+//调用栈上值 转 int
 LUA_API lua_Integer lua_tointeger (lua_State *L, int idx) {
   TValue n;
   const TValue *o = index2adr(L, idx);
   if (tonumber(o, &n)) {
     lua_Integer res;
     lua_Number num = nvalue(o);
-    lua_number2integer(res, num);
+    lua_number2integer(res, num);	//Number 的double转int
     return res;
   }
   else
     return 0;
 }
 
-
+//调用栈上值 转 boolean，主要看是否为nil 和  false
 LUA_API int lua_toboolean (lua_State *L, int idx) {
   const TValue *o = index2adr(L, idx);
   return !l_isfalse(o);
 }
 
-
+//调用栈上值 转 string，还能出个参数 长度
 LUA_API const char *lua_tolstring (lua_State *L, int idx, size_t *len) {
   StkId o = index2adr(L, idx);
-  if (!ttisstring(o)) {
+  if (!ttisstring(o)) {		//如果不是string
     lua_lock(L);  /* `luaV_tostring' may create a new string */
     if (!luaV_tostring(L, o)) {  /* conversion failed? */
       if (len != NULL) *len = 0;
@@ -357,7 +359,7 @@ LUA_API const char *lua_tolstring (lua_State *L, int idx, size_t *len) {
   return svalue(o);
 }
 
-
+//调用栈上值 的长度，估计是做#用的
 LUA_API size_t lua_objlen (lua_State *L, int idx) {
   StkId o = index2adr(L, idx);
   switch (ttype(o)) {
@@ -375,13 +377,13 @@ LUA_API size_t lua_objlen (lua_State *L, int idx) {
   }
 }
 
-
+//调用栈上值 转 c函数，返回指针
 LUA_API lua_CFunction lua_tocfunction (lua_State *L, int idx) {
   StkId o = index2adr(L, idx);
   return (!iscfunction(o)) ? NULL : clvalue(o)->c.f;
 }
 
-
+//调用栈上值 转指针，只要两种指针做返回，其他返回空
 LUA_API void *lua_touserdata (lua_State *L, int idx) {
   StkId o = index2adr(L, idx);
   switch (ttype(o)) {
@@ -391,13 +393,13 @@ LUA_API void *lua_touserdata (lua_State *L, int idx) {
   }
 }
 
-
+//调用栈上值 转线程
 LUA_API lua_State *lua_tothread (lua_State *L, int idx) {
   StkId o = index2adr(L, idx);
   return (!ttisthread(o)) ? NULL : thvalue(o);
 }
 
-
+//调用栈上值 转线程, 不过这个类型多，有gc对象的返回指针，userdata的返回指针
 LUA_API const void *lua_topointer (lua_State *L, int idx) {
   StkId o = index2adr(L, idx);
   switch (ttype(o)) {

@@ -520,9 +520,9 @@
 */
 #define LUA_NUMBER_SCAN		"%lf"
 #define LUA_NUMBER_FMT		"%.14g"
-#define lua_number2str(s,n)	sprintf((s), LUA_NUMBER_FMT, (n))
-#define LUAI_MAXNUMBER2STR	32 /* 16 digits, sign, point, and \0 */
-#define lua_str2number(s,p)	strtod((s), (p))
+#define lua_number2str(s,n)	sprintf((s), LUA_NUMBER_FMT, (n))		//转换成数值
+#define LUAI_MAXNUMBER2STR	32 /* 16 digits, sign, point, and \0 */	//保存数值buf长度
+#define lua_str2number(s,p)	strtod((s), (p))						//字符串到数值
 
 
 /*

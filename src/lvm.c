@@ -32,18 +32,19 @@
 #define MAXTAGLOOP	100
 
 
+//tonumber转换
 const TValue *luaV_tonumber (const TValue *obj, TValue *n) {
   lua_Number num;
-  if (ttisnumber(obj)) return obj;
+  if (ttisnumber(obj)) return obj;		//如果是number就直接返回，但是没有做赋值
   if (ttisstring(obj) && luaO_str2d(svalue(obj), &num)) {
-    setnvalue(n, num);
+    setnvalue(n, num);		//转换成功了就赋值给n
     return n;
   }
   else
-    return NULL;
+    return NULL;			//所以返回是有谱的
 }
 
-
+//tostring转换，数值才能转换
 int luaV_tostring (lua_State *L, StkId obj) {
   if (!ttisnumber(obj))
     return 0;
@@ -221,7 +222,7 @@ static int l_strcmp (const TString *ls, const TString *rs) {
   }
 }
 
-
+//小于比较
 int luaV_lessthan (lua_State *L, const TValue *l, const TValue *r) {
   int res;
   if (ttype(l) != ttype(r))
@@ -251,15 +252,16 @@ static int lessequal (lua_State *L, const TValue *l, const TValue *r) {
   return luaG_ordererror(L, l, r);
 }
 
-
+//比较两值是否相等
 int luaV_equalval (lua_State *L, const TValue *t1, const TValue *t2) {
   const TValue *tm;
-  lua_assert(ttype(t1) == ttype(t2));
+  lua_assert(ttype(t1) == ttype(t2));		//类型必须相等
   switch (ttype(t1)) {
-    case LUA_TNIL: return 1;
+    case LUA_TNIL: return 1;				//nil等于nil
     case LUA_TNUMBER: return luai_numeq(nvalue(t1), nvalue(t2));
     case LUA_TBOOLEAN: return bvalue(t1) == bvalue(t2);  /* true must be 1 !! */
     case LUA_TLIGHTUSERDATA: return pvalue(t1) == pvalue(t2);
+	//表的比较有些复杂
     case LUA_TUSERDATA: {
       if (uvalue(t1) == uvalue(t2)) return 1;
       tm = get_compTM(L, uvalue(t1)->metatable, uvalue(t2)->metatable,
@@ -271,9 +273,9 @@ int luaV_equalval (lua_State *L, const TValue *t1, const TValue *t2) {
       tm = get_compTM(L, hvalue(t1)->metatable, hvalue(t2)->metatable, TM_EQ);
       break;  /* will try TM */
     }
-    default: return gcvalue(t1) == gcvalue(t2);
+    default: return gcvalue(t1) == gcvalue(t2);	//其他gc比较
   }
-  if (tm == NULL) return 0;  /* no TM? */
+  if (tm == NULL) return 0;  /* no TM? */			//还是表的比较
   callTMres(L, L->top, tm, t1, t2);  /* call TM */
   return !l_isfalse(L->top);
 }

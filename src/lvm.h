@@ -15,9 +15,10 @@
 
 #define tostring(L,o) ((ttype(o) == LUA_TSTRING) || (luaV_tostring(L, o)))
 
+//转换数据为number到n，并且将转换结果返回，为什么会往o上赋值，那n就是个陪衬
 #define tonumber(o,n)	(ttype(o) == LUA_TNUMBER || \
                          (((o) = luaV_tonumber(o,n)) != NULL))
-
+//先比较type，再比较值
 #define equalobj(L,o1,o2) \
 	(ttype(o1) == ttype(o2) && luaV_equalval(L, o1, o2))
 

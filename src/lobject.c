@@ -88,14 +88,18 @@ int luaO_rawequalObj (const TValue *t1, const TValue *t2) {
   }
 }
 
-
+//转换字符串为数字
 int luaO_str2d (const char *s, lua_Number *result) {
   char *endptr;
+  //先按照10进制转换，如果没有任何数字的迹象，就返回错误，因为16进制也是0x开头的
   *result = lua_str2number(s, &endptr);
   if (endptr == s) return 0;  /* conversion failed */
+  //检查是否是停在x处了，如果是，再按16进制转换一下
   if (*endptr == 'x' || *endptr == 'X')  /* maybe an hexadecimal constant? */
     *result = cast_num(strtoul(s, &endptr, 16));
+  //如果停止在\0处，就认为ok，不过这个0可能是拦腰截断的0，不是末尾的0
   if (*endptr == '\0') return 1;  /* most common case */
+  //如果后面到\0之间都是空格，是会被认为无影响的
   while (isspace(cast(unsigned char, *endptr))) endptr++;
   if (*endptr != '\0') return 0;  /* invalid trailing characters? */
   return 1;

@@ -133,32 +133,50 @@ LUA_API void  (lua_xmove) (lua_State *from, lua_State *to, int n);
 /*
 ** access functions (stack -> C)
 */
-
+//调用栈上值是否为number
 LUA_API int             (lua_isnumber) (lua_State *L, int idx);
+//调用栈上值是否为string
 LUA_API int             (lua_isstring) (lua_State *L, int idx);
+//调用栈上值是否为c 函数
 LUA_API int             (lua_iscfunction) (lua_State *L, int idx);
+//调用栈上值是否为userdata或者指针
 LUA_API int             (lua_isuserdata) (lua_State *L, int idx);
+//调用栈上值得type，nil类型无type，其他类型有type
 LUA_API int             (lua_type) (lua_State *L, int idx);
+//调用栈上值得type, 但是返回的是字符串（描述信息）
 LUA_API const char     *(lua_typename) (lua_State *L, int tp);
-
+//调用栈上 两值是否相等
 LUA_API int            (lua_equal) (lua_State *L, int idx1, int idx2);
+//调用栈上 两值 底层比较
 LUA_API int            (lua_rawequal) (lua_State *L, int idx1, int idx2);
+//调用栈上 两值 小于比较
 LUA_API int            (lua_lessthan) (lua_State *L, int idx1, int idx2);
 
+//--------下面的操作经常会改变对象本身，就是将对象做转换了。
+//调用栈上值 转 number
 LUA_API lua_Number      (lua_tonumber) (lua_State *L, int idx);
+//调用栈上值 转 int
 LUA_API lua_Integer     (lua_tointeger) (lua_State *L, int idx);
+//调用栈上值 转 boolean，主要看是否为nil 和  false
 LUA_API int             (lua_toboolean) (lua_State *L, int idx);
+//调用栈上值 转 string
 LUA_API const char     *(lua_tolstring) (lua_State *L, int idx, size_t *len);
+//调用栈上值 的长度
 LUA_API size_t          (lua_objlen) (lua_State *L, int idx);
+//调用栈上值 转 c函数
 LUA_API lua_CFunction   (lua_tocfunction) (lua_State *L, int idx);
+//调用栈上值 转指针
 LUA_API void	       *(lua_touserdata) (lua_State *L, int idx);
+//调用栈上值 转线程
 LUA_API lua_State      *(lua_tothread) (lua_State *L, int idx);
+//调用栈上值 转线程, 不过这个类型多
 LUA_API const void     *(lua_topointer) (lua_State *L, int idx);
 
 
 /*
 ** push functions (C -> stack)
 */
+//C往调用栈里设置值
 LUA_API void  (lua_pushnil) (lua_State *L);
 LUA_API void  (lua_pushnumber) (lua_State *L, lua_Number n);
 LUA_API void  (lua_pushinteger) (lua_State *L, lua_Integer n);
@@ -265,13 +283,19 @@ LUA_API void lua_setallocf (lua_State *L, lua_Alloc f, void *ud);
 
 //判断栈上值是否为function
 #define lua_isfunction(L,n)	(lua_type(L, (n)) == LUA_TFUNCTION)
-//
+//判断栈上值是否为table
 #define lua_istable(L,n)	(lua_type(L, (n)) == LUA_TTABLE)
+//判断栈上值是否为指针
 #define lua_islightuserdata(L,n)	(lua_type(L, (n)) == LUA_TLIGHTUSERDATA)
+//判断栈上值是否为nil
 #define lua_isnil(L,n)		(lua_type(L, (n)) == LUA_TNIL)
+//判断栈上值是否为boolen
 #define lua_isboolean(L,n)	(lua_type(L, (n)) == LUA_TBOOLEAN)
+//判断栈上值是否为 线程
 #define lua_isthread(L,n)	(lua_type(L, (n)) == LUA_TTHREAD)
+//判断栈上值是否为 None,none是什么数据？
 #define lua_isnone(L,n)		(lua_type(L, (n)) == LUA_TNONE)
+//判断栈上值是否为 不怎样
 #define lua_isnoneornil(L, n)	(lua_type(L, (n)) <= 0)
 
 #define lua_pushliteral(L, s)	\
