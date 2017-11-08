@@ -104,7 +104,7 @@ typedef struct global_State {
 struct lua_State {
   CommonHeader;
   lu_byte status;
-  StkId top;  /* first free slot in the stack */							//调用栈的栈定
+  StkId top;  /* first free slot in the stack */							//调用栈的栈顶，是个free的
   StkId base;  /* base of current function */								//当前函数，调用栈的栈底，StkId 就是TValue的指针。
   global_State *l_G;														//每个调用栈都共用一个全局资源对象
   CallInfo *ci;  /* call info for current function */						//当前的调用函数info

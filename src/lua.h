@@ -176,24 +176,35 @@ LUA_API const void     *(lua_topointer) (lua_State *L, int idx);
 /*
 ** push functions (C -> stack)
 */
-//C往调用栈里设置值
+//往调用栈里压入 nil
 LUA_API void  (lua_pushnil) (lua_State *L);
+//往调用栈里压入 number
 LUA_API void  (lua_pushnumber) (lua_State *L, lua_Number n);
+//往调用栈里压入 int
 LUA_API void  (lua_pushinteger) (lua_State *L, lua_Integer n);
+//往调用栈里压入 带长度的string
 LUA_API void  (lua_pushlstring) (lua_State *L, const char *s, size_t l);
+//往调用栈里压入 不带长度的string
 LUA_API void  (lua_pushstring) (lua_State *L, const char *s);
+//往调用栈里压入 print va
 LUA_API const char *(lua_pushvfstring) (lua_State *L, const char *fmt,
                                                       va_list argp);
+//往调用栈里压入 print 格式串
 LUA_API const char *(lua_pushfstring) (lua_State *L, const char *fmt, ...);
+//往调用栈里压入 函数
 LUA_API void  (lua_pushcclosure) (lua_State *L, lua_CFunction fn, int n);
+//往调用栈里压入 boolean
 LUA_API void  (lua_pushboolean) (lua_State *L, int b);
+//往调用栈里压入 指针
 LUA_API void  (lua_pushlightuserdata) (lua_State *L, void *p);
+//往调用栈里压入 线程
 LUA_API int   (lua_pushthread) (lua_State *L);
 
 
 /*
 ** get functions (Lua -> stack)
 */
+//
 LUA_API void  (lua_gettable) (lua_State *L, int idx);
 LUA_API void  (lua_getfield) (lua_State *L, int idx, const char *k);
 LUA_API void  (lua_rawget) (lua_State *L, int idx);

@@ -37,11 +37,12 @@ const char lua_ident[] =
   "$URL: www.lua.org $\n";
 
 
-
+//检查当前调用栈深度，给定的n不能超过深度
 #define api_checknelems(L, n)	api_check(L, (n) <= (L->top - L->base))
 
 #define api_checkvalidindex(L, i)	api_check(L, (i) != luaO_nilobject)
 
+//调用栈往上增长，这个top必须小于callinfo的top是为什么？
 #define api_incr_top(L)   {api_check(L, L->top < L->ci->top); L->top++;}
 
 
@@ -419,15 +420,15 @@ LUA_API const void *lua_topointer (lua_State *L, int idx) {
 ** push functions (C -> stack)
 */
 
-
+//往调用栈里压入nil
 LUA_API void lua_pushnil (lua_State *L) {
   lua_lock(L);
-  setnilvalue(L->top);
+  setnilvalue(L->top);		//因为top处是空闲的，直接往上边设置
   api_incr_top(L);
   lua_unlock(L);
 }
 
-
+//往调用栈里压入number
 LUA_API void lua_pushnumber (lua_State *L, lua_Number n) {
   lua_lock(L);
   setnvalue(L->top, n);
@@ -435,7 +436,7 @@ LUA_API void lua_pushnumber (lua_State *L, lua_Number n) {
   lua_unlock(L);
 }
 
-
+//往调用栈里压入int
 LUA_API void lua_pushinteger (lua_State *L, lua_Integer n) {
   lua_lock(L);
   setnvalue(L->top, cast_num(n));
@@ -443,7 +444,7 @@ LUA_API void lua_pushinteger (lua_State *L, lua_Integer n) {
   lua_unlock(L);
 }
 
-
+//往调用栈里压入 带长度的string
 LUA_API void lua_pushlstring (lua_State *L, const char *s, size_t len) {
   lua_lock(L);
   luaC_checkGC(L);
@@ -452,7 +453,7 @@ LUA_API void lua_pushlstring (lua_State *L, const char *s, size_t len) {
   lua_unlock(L);
 }
 
-
+//往调用栈里压入 不带长度的字符串，支持空字符串 表示nil
 LUA_API void lua_pushstring (lua_State *L, const char *s) {
   if (s == NULL)
     lua_pushnil(L);
@@ -460,7 +461,7 @@ LUA_API void lua_pushstring (lua_State *L, const char *s) {
     lua_pushlstring(L, s, strlen(s));
 }
 
-
+//format string然后压入
 LUA_API const char *lua_pushvfstring (lua_State *L, const char *fmt,
                                       va_list argp) {
   const char *ret;
@@ -471,7 +472,7 @@ LUA_API const char *lua_pushvfstring (lua_State *L, const char *fmt,
   return ret;
 }
 
-
+//format string然后压入
 LUA_API const char *lua_pushfstring (lua_State *L, const char *fmt, ...) {
   const char *ret;
   va_list argp;
@@ -484,12 +485,12 @@ LUA_API const char *lua_pushfstring (lua_State *L, const char *fmt, ...) {
   return ret;
 }
 
-
+//压入函数，其中一个输入是function
 LUA_API void lua_pushcclosure (lua_State *L, lua_CFunction fn, int n) {
   Closure *cl;
   lua_lock(L);
   luaC_checkGC(L);
-  api_checknelems(L, n);
+  api_checknelems(L, n);		//n 不能超过调用栈深度
   cl = luaF_newCclosure(L, n, getcurrenv(L));
   cl->c.f = fn;
   L->top -= n;
@@ -501,7 +502,7 @@ LUA_API void lua_pushcclosure (lua_State *L, lua_CFunction fn, int n) {
   lua_unlock(L);
 }
 
-
+//压入boolean
 LUA_API void lua_pushboolean (lua_State *L, int b) {
   lua_lock(L);
   setbvalue(L->top, (b != 0));  /* ensure that true is 1 */
@@ -509,7 +510,7 @@ LUA_API void lua_pushboolean (lua_State *L, int b) {
   lua_unlock(L);
 }
 
-
+//压入指针
 LUA_API void lua_pushlightuserdata (lua_State *L, void *p) {
   lua_lock(L);
   setpvalue(L->top, p);
@@ -517,7 +518,7 @@ LUA_API void lua_pushlightuserdata (lua_State *L, void *p) {
   lua_unlock(L);
 }
 
-
+//压入线程，自己
 LUA_API int lua_pushthread (lua_State *L) {
   lua_lock(L);
   setthvalue(L, L->top, L);
@@ -532,7 +533,7 @@ LUA_API int lua_pushthread (lua_State *L) {
 ** get functions (Lua -> stack)
 */
 
-
+//
 LUA_API void lua_gettable (lua_State *L, int idx) {
   StkId t;
   lua_lock(L);

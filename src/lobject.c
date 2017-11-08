@@ -106,17 +106,17 @@ int luaO_str2d (const char *s, lua_Number *result) {
 }
 
 
-
+//luaO_pushvfstring 中压入分段用
 static void pushstr (lua_State *L, const char *str) {
   setsvalue2s(L, L->top, luaS_new(L, str));
   incr_top(L);
 }
 
-
+//向调用栈压入 格式串
 /* this function handles only `%d', `%c', %f, %p, and `%s' formats */
 const char *luaO_pushvfstring (lua_State *L, const char *fmt, va_list argp) {
-  int n = 1;
-  pushstr(L, "");
+  int n = 1;								//统计压入的数量
+  pushstr(L, "");							//按照n先压入一个
   for (;;) {
     const char *e = strchr(fmt, '%');
     if (e == NULL) break;
@@ -169,12 +169,12 @@ const char *luaO_pushvfstring (lua_State *L, const char *fmt, va_list argp) {
     fmt = e+2;
   }
   pushstr(L, fmt);
-  luaV_concat(L, n+1, cast_int(L->top - L->base) - 1);
+  luaV_concat(L, n+1, cast_int(L->top - L->base) - 1);	//concat一次
   L->top -= n;
-  return svalue(L->top - 1);
+  return svalue(L->top - 1);							//返回字符串的指针
 }
 
-
+//向调用栈压入格式串
 const char *luaO_pushfstring (lua_State *L, const char *fmt, ...) {
   const char *msg;
   va_list argp;
