@@ -29,17 +29,25 @@
 /* option for multiple returns in `lua_pcall' and `lua_call' */
 #define LUA_MULTRET	(-1)
 
+//
+//http://www.lua.org/manual/5.1/
+//
 
 /*
 ** pseudo-indices
 */
-#define LUA_REGISTRYINDEX	(-10000)
-#define LUA_ENVIRONINDEX	(-10001)
-#define LUA_GLOBALSINDEX	(-10002)
-#define lua_upvalueindex(i)	(LUA_GLOBALSINDEX-(i))
+//为了避免这个问题，Lua提供了一个独立的被称为registry的表，C代码可以自由使用，但Lua代码不能访问他。
+//http://www.lua.org/manual/5.1/manual.html#pdf-LUA_REGISTRYINDEX
+//指定调用栈上索引时，会使用这些特殊宏定义
+                                                        //-1 到 LUA_REGISTRYINDEX 之间是从栈的top往下找索引
+#define LUA_REGISTRYINDEX	(-10000)					//注册表的调用栈假索引
+#define LUA_ENVIRONINDEX	(-10001)					//C 函数所对应的 环境
+#define LUA_GLOBALSINDEX	(-10002)					//Lua 中的全局环境
+#define lua_upvalueindex(i)	(LUA_GLOBALSINDEX-(i))		//比LUA_GLOBALSINDEX数更小的是upvalue的索引了
 
 
 /* thread status; 0 is OK */
+//线程的状态
 #define LUA_YIELD	1
 #define LUA_ERRRUN	2
 #define LUA_ERRSYNTAX	3
@@ -119,14 +127,21 @@ LUA_API lua_CFunction (lua_atpanic) (lua_State *L, lua_CFunction panicf);
 /*
 ** basic stack manipulation
 */
+//调用栈操作 取top
 LUA_API int   (lua_gettop) (lua_State *L);
+//调用栈操作      填充调用栈 使用nil
 LUA_API void  (lua_settop) (lua_State *L, int idx);
+//调用栈操作 取调用栈上指定位置的值 压入调用栈
 LUA_API void  (lua_pushvalue) (lua_State *L, int idx);
+//调用栈操作 抽掉指定的变量
 LUA_API void  (lua_remove) (lua_State *L, int idx);
+//调用栈操作 在指定的位置插入top
 LUA_API void  (lua_insert) (lua_State *L, int idx);
+//调用栈操作 在调用栈上替换 TODO 没分析完
 LUA_API void  (lua_replace) (lua_State *L, int idx);
+//调用栈操作 TODO 没分析完
 LUA_API int   (lua_checkstack) (lua_State *L, int sz);
-
+//调用栈操作， 状态机之间转义 变量
 LUA_API void  (lua_xmove) (lua_State *from, lua_State *to, int n);
 
 
@@ -151,7 +166,6 @@ LUA_API int            (lua_equal) (lua_State *L, int idx1, int idx2);
 LUA_API int            (lua_rawequal) (lua_State *L, int idx1, int idx2);
 //调用栈上 两值 小于比较
 LUA_API int            (lua_lessthan) (lua_State *L, int idx1, int idx2);
-
 //--------下面的操作经常会改变对象本身，就是将对象做转换了。
 //调用栈上值 转 number
 LUA_API lua_Number      (lua_tonumber) (lua_State *L, int idx);
@@ -308,7 +322,7 @@ LUA_API void lua_setallocf (lua_State *L, lua_Alloc f, void *ud);
 #define lua_isnone(L,n)		(lua_type(L, (n)) == LUA_TNONE)
 //判断栈上值是否为 不怎样
 #define lua_isnoneornil(L, n)	(lua_type(L, (n)) <= 0)
-
+//lua_pushlstring 静态字符版
 #define lua_pushliteral(L, s)	\
 	lua_pushlstring(L, "" s, (sizeof(s)/sizeof(char))-1)
 
