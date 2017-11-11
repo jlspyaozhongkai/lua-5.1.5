@@ -525,7 +525,7 @@ const TValue *luaH_get (Table *t, const TValue *key) {
   }
 }
 
-//通用的table写
+//通用的table写,如果key 没有会创建新的
 TValue *luaH_set (lua_State *L, Table *t, const TValue *key) {
   const TValue *p = luaH_get(t, key);		//先找一下
   t->flags = 0;								//有设置动作就清一清

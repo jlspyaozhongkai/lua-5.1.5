@@ -220,12 +220,19 @@ LUA_API int   (lua_pushthread) (lua_State *L);
 */
 //lua运行时，读取table
 LUA_API void  (lua_gettable) (lua_State *L, int idx);
+//lua运行时，通过制定的字符串做key，读取table
 LUA_API void  (lua_getfield) (lua_State *L, int idx, const char *k);
+//lua运行时，rawget 不走元表
 LUA_API void  (lua_rawget) (lua_State *L, int idx);
+//lua运行时，rawget 索引版
 LUA_API void  (lua_rawgeti) (lua_State *L, int idx, int n);
+//lua运行时，创建table
 LUA_API void  (lua_createtable) (lua_State *L, int narr, int nrec);
+//lua运行时，创建userdata
 LUA_API void *(lua_newuserdata) (lua_State *L, size_t sz);
+//lua运行时，获取栈上对象元表
 LUA_API int   (lua_getmetatable) (lua_State *L, int objindex);
+//lua运行时，获取栈上对象的env
 LUA_API void  (lua_getfenv) (lua_State *L, int idx);
 
 
@@ -234,10 +241,15 @@ LUA_API void  (lua_getfenv) (lua_State *L, int idx);
 */
 //lua运行时，写入table
 LUA_API void  (lua_settable) (lua_State *L, int idx);
+//lua运行时，通过制定的字符串做key，写入table
 LUA_API void  (lua_setfield) (lua_State *L, int idx, const char *k);
+//lua运行时，rawset 不走元表
 LUA_API void  (lua_rawset) (lua_State *L, int idx);
+//lua运行时，rawset 索引版
 LUA_API void  (lua_rawseti) (lua_State *L, int idx, int n);
+//lua运行时，设置栈上对象元表
 LUA_API int   (lua_setmetatable) (lua_State *L, int objindex);
+//lua运行时，设置栈上对象的env
 LUA_API int   (lua_setfenv) (lua_State *L, int idx);
 
 

@@ -543,57 +543,57 @@ LUA_API void lua_gettable (lua_State *L, int idx) {
   lua_unlock(L);
 }
 
-
+//lua运行时，通过string的方式gettable
 LUA_API void lua_getfield (lua_State *L, int idx, const char *k) {
   StkId t;
   TValue key;
   lua_lock(L);
-  t = index2adr(L, idx);
+  t = index2adr(L, idx);					//首先定位到栈上变量
   api_checkvalidindex(L, t);
-  setsvalue(L, &key, luaS_new(L, k));
-  luaV_gettable(L, t, &key, L->top);
+  setsvalue(L, &key, luaS_new(L, k));		//将k包装成变量，做key
+  luaV_gettable(L, t, &key, L->top);		//然后执行正经的table get操作, 结果保存到栈顶，然后调整栈
   api_incr_top(L);
   lua_unlock(L);
 }
 
-
+//lua运行时，对rawget，这个不走元表的
 LUA_API void lua_rawget (lua_State *L, int idx) {
   StkId t;
   lua_lock(L);
   t = index2adr(L, idx);
   api_check(L, ttistable(t));
-  setobj2s(L, L->top - 1, luaH_get(hvalue(t), L->top - 1));
+  setobj2s(L, L->top - 1, luaH_get(hvalue(t), L->top - 1));	  //先从栈顶取key，在表中查找，最后结果设置到栈顶相同位置
   lua_unlock(L);
 }
 
-
+//lua运行时，rawget 索引版
 LUA_API void lua_rawgeti (lua_State *L, int idx, int n) {
   StkId o;
   lua_lock(L);
   o = index2adr(L, idx);
   api_check(L, ttistable(o));
-  setobj2s(L, L->top, luaH_getnum(hvalue(o), n));
-  api_incr_top(L);
+  setobj2s(L, L->top, luaH_getnum(hvalue(o), n));			//通过n索引找成员，然后复制到top
+  api_incr_top(L);											//调整调用栈
   lua_unlock(L);
 }
 
-
+//lua运行时，创建table
 LUA_API void lua_createtable (lua_State *L, int narray, int nrec) {
   lua_lock(L);
   luaC_checkGC(L);
-  sethvalue(L, L->top, luaH_new(L, narray, nrec));
+  sethvalue(L, L->top, luaH_new(L, narray, nrec));			//创建新table放在栈顶
   api_incr_top(L);
   lua_unlock(L);
 }
 
-
+//lua运行时，获取栈上对象元表
 LUA_API int lua_getmetatable (lua_State *L, int objindex) {
   const TValue *obj;
   Table *mt = NULL;
   int res;
   lua_lock(L);
-  obj = index2adr(L, objindex);
-  switch (ttype(obj)) {
+  obj = index2adr(L, objindex);				//以前不是叫idx么？
+  switch (ttype(obj)) {						//按照类型取元表
     case LUA_TTABLE:
       mt = hvalue(obj)->metatable;
       break;
@@ -607,7 +607,7 @@ LUA_API int lua_getmetatable (lua_State *L, int objindex) {
   if (mt == NULL)
     res = 0;
   else {
-    sethvalue(L, L->top, mt);
+    sethvalue(L, L->top, mt);				//将元表值压栈
     api_incr_top(L);
     res = 1;
   }
@@ -615,13 +615,13 @@ LUA_API int lua_getmetatable (lua_State *L, int objindex) {
   return res;
 }
 
-
+//lua运行时，取对象的env值
 LUA_API void lua_getfenv (lua_State *L, int idx) {
   StkId o;
   lua_lock(L);
   o = index2adr(L, idx);
   api_checkvalidindex(L, o);
-  switch (ttype(o)) {
+  switch (ttype(o)) {						//根据对象的类型取
     case LUA_TFUNCTION:
       sethvalue(L, L->top, clvalue(o)->c.env);
       break;
@@ -656,7 +656,7 @@ LUA_API void lua_settable (lua_State *L, int idx) {
   lua_unlock(L);
 }
 
-
+//lua运行时，通过制定的字符串做key，写入table
 LUA_API void lua_setfield (lua_State *L, int idx, const char *k) {
   StkId t;
   TValue key;
@@ -665,12 +665,12 @@ LUA_API void lua_setfield (lua_State *L, int idx, const char *k) {
   t = index2adr(L, idx);
   api_checkvalidindex(L, t);
   setsvalue(L, &key, luaS_new(L, k));
-  luaV_settable(L, t, &key, L->top - 1);
+  luaV_settable(L, t, &key, L->top - 1);	//通过k转换成string 以后执行的luaV_settable
   L->top--;  /* pop value */
   lua_unlock(L);
 }
 
-
+//lua运行时，rawset 不走元表
 LUA_API void lua_rawset (lua_State *L, int idx) {
   StkId t;
   lua_lock(L);
@@ -679,11 +679,11 @@ LUA_API void lua_rawset (lua_State *L, int idx) {
   api_check(L, ttistable(t));
   setobj2t(L, luaH_set(L, hvalue(t), L->top-2), L->top-1);
   luaC_barriert(L, hvalue(t), L->top-1);
-  L->top -= 2;
+  L->top -= 2;								//因为没有返回值，所以讲key和value都弹出
   lua_unlock(L);
 }
 
-
+//lua运行时，rawset 索引版
 LUA_API void lua_rawseti (lua_State *L, int idx, int n) {
   StkId o;
   lua_lock(L);
@@ -696,21 +696,21 @@ LUA_API void lua_rawseti (lua_State *L, int idx, int n) {
   lua_unlock(L);
 }
 
-
+//lua运行时，设置栈上对象元表
 LUA_API int lua_setmetatable (lua_State *L, int objindex) {
   TValue *obj;
   Table *mt;
   lua_lock(L);
   api_checknelems(L, 1);
-  obj = index2adr(L, objindex);
+  obj = index2adr(L, objindex);					//找到对象
   api_checkvalidindex(L, obj);
   if (ttisnil(L->top - 1))
-    mt = NULL;
+    mt = NULL;									//清除元表
   else {
     api_check(L, ttistable(L->top - 1));
-    mt = hvalue(L->top - 1);
+    mt = hvalue(L->top - 1);					//还是设置元表
   }
-  switch (ttype(obj)) {
+  switch (ttype(obj)) {							//根据被设置元素的类型设置元表
     case LUA_TTABLE: {
       hvalue(obj)->metatable = mt;
       if (mt)
@@ -724,7 +724,7 @@ LUA_API int lua_setmetatable (lua_State *L, int objindex) {
       break;
     }
     default: {
-      G(L)->mt[ttype(obj)] = mt;
+      G(L)->mt[ttype(obj)] = mt;				//这个最吓人，直接设置到了基本类型上去了，这个是一个风险操作。
       break;
     }
   }
@@ -733,7 +733,7 @@ LUA_API int lua_setmetatable (lua_State *L, int objindex) {
   return 1;
 }
 
-
+//lua运行时，设置栈上对象的env
 LUA_API int lua_setfenv (lua_State *L, int idx) {
   StkId o;
   int res = 1;
@@ -1024,7 +1024,7 @@ LUA_API void lua_setallocf (lua_State *L, lua_Alloc f, void *ud) {
   lua_unlock(L);
 }
 
-
+//lua运行时，创建userdata
 LUA_API void *lua_newuserdata (lua_State *L, size_t size) {
   Udata *u;
   lua_lock(L);
@@ -1033,7 +1033,7 @@ LUA_API void *lua_newuserdata (lua_State *L, size_t size) {
   setuvalue(L, L->top, u);
   api_incr_top(L);
   lua_unlock(L);
-  return u + 1;
+  return u + 1;		//返回用户指针
 }
 
 

@@ -136,28 +136,28 @@ void luaV_gettable (lua_State *L, const TValue *t, TValue *key, StkId val) {
 void luaV_settable (lua_State *L, const TValue *t, TValue *key, StkId val) {
   int loop;
   TValue temp;
-  for (loop = 0; loop < MAXTAGLOOP; loop++) {
+  for (loop = 0; loop < MAXTAGLOOP; loop++) {		//因为元表的关系，不能跟踪太深
     const TValue *tm;
-    if (ttistable(t)) {  /* `t' is a table? */
-      Table *h = hvalue(t);
-      TValue *oldval = luaH_set(L, h, key); /* do a primitive set */
-      if (!ttisnil(oldval) ||  /* result is no nil? */
-          (tm = fasttm(L, h->metatable, TM_NEWINDEX)) == NULL) { /* or no TM? */
-        setobj2t(L, oldval, val);
-        h->flags = 0;
-        luaC_barriert(L, h, val);
+    if (ttistable(t)) {  /* `t' is a table? */		//如果是表
+      Table *h = hvalue(t);							//则先进行单纯的查找
+      TValue *oldval = luaH_set(L, h, key); /* do a primitive set */	//设置时如果没有会临时设置为nil
+      if (!ttisnil(oldval) ||  /* result is no nil? */		//如果值不为nil，就直接设置好了。
+          (tm = fasttm(L, h->metatable, TM_NEWINDEX)) == NULL) { /* or no TM? */	//如果值为nil，且元表没有__newindex,那么就没办法了，丢地设置了。
+        setobj2t(L, oldval, val);					//设置值上去
+        h->flags = 0;								//因为发生过设置，所以清理flags
+        luaC_barriert(L, h, val);					//
         return;
       }
       /* else will try the tag method */
     }
-    else if (ttisnil(tm = luaT_gettmbyobj(L, t, TM_NEWINDEX)))
+    else if (ttisnil(tm = luaT_gettmbyobj(L, t, TM_NEWINDEX)))	//其他类型，没有__newindex的，你做什么设置呢？
       luaG_typeerror(L, t, "index");
-    if (ttisfunction(tm)) {
+    if (ttisfunction(tm)) {							//__newindex如果是函数的，就调用
       callTM(L, tm, t, key, val);
       return;
     }
     /* else repeat with `tm' */
-    setobj(L, &temp, tm);  /* avoid pointing inside table (may rehash) */
+    setobj(L, &temp, tm);  /* avoid pointing inside table (may rehash) */	//其他类型的继续
     t = &temp;
   }
   luaG_runerror(L, "loop in settable");
