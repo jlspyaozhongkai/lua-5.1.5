@@ -218,7 +218,7 @@ LUA_API int   (lua_pushthread) (lua_State *L);
 /*
 ** get functions (Lua -> stack)
 */
-//
+//lua运行时，读取table
 LUA_API void  (lua_gettable) (lua_State *L, int idx);
 LUA_API void  (lua_getfield) (lua_State *L, int idx, const char *k);
 LUA_API void  (lua_rawget) (lua_State *L, int idx);
@@ -232,6 +232,7 @@ LUA_API void  (lua_getfenv) (lua_State *L, int idx);
 /*
 ** set functions (stack -> Lua)
 */
+//lua运行时，写入table
 LUA_API void  (lua_settable) (lua_State *L, int idx);
 LUA_API void  (lua_setfield) (lua_State *L, int idx, const char *k);
 LUA_API void  (lua_rawset) (lua_State *L, int idx);

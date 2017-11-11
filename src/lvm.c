@@ -105,33 +105,34 @@ static void callTM (lua_State *L, const TValue *f, const TValue *p1,
   luaD_call(L, L->top - 4, 0);
 }
 
-
+//从指定的t里，按照key读取，最后把读取值保存到val中
+//由于index等原因，可能辗转多级才能查询到值
 void luaV_gettable (lua_State *L, const TValue *t, TValue *key, StkId val) {
   int loop;
-  for (loop = 0; loop < MAXTAGLOOP; loop++) {
+  for (loop = 0; loop < MAXTAGLOOP; loop++) {		//最多走100级
     const TValue *tm;
-    if (ttistable(t)) {  /* `t' is a table? */
-      Table *h = hvalue(t);
-      const TValue *res = luaH_get(h, key); /* do a primitive get */
-      if (!ttisnil(res) ||  /* result is no nil? */
-          (tm = fasttm(L, h->metatable, TM_INDEX)) == NULL) { /* or no TM? */
+    if (ttistable(t)) {  /* `t' is a table? */		//t本身就是一个table
+      Table *h = hvalue(t);							//取得table数据的对象
+      const TValue *res = luaH_get(h, key); /* do a primitive get */	//先在hash中找，不带高级属性的找
+      if (!ttisnil(res) ||  /* result is no nil? */						//能找到最好，结果返回去
+          (tm = fasttm(L, h->metatable, TM_INDEX)) == NULL) { /* or no TM? */	//如果找不到元表中的__index，就也结束了，nil就nil了
         setobj2s(L, val, res);
         return;
       }
       /* else will try the tag method */
     }
-    else if (ttisnil(tm = luaT_gettmbyobj(L, t, TM_INDEX)))
-      luaG_typeerror(L, t, "index");
-    if (ttisfunction(tm)) {
-      callTMres(L, val, tm, t, key);
+    else if (ttisnil(tm = luaT_gettmbyobj(L, t, TM_INDEX)))		//上边是表的先找一下，其他类型要根据情况才能找到元表，再__index
+      luaG_typeerror(L, t, "index");							//index 不对劲
+    if (ttisfunction(tm)) {							//如果是函数，就调用他
+      callTMres(L, val, tm, t, key);				//函数就调用他来取值
       return;
     }
-    t = tm;  /* else repeat with `tm' */ 
+    t = tm;  /* else repeat with `tm' */ 			//如果是表，就继续追查
   }
   luaG_runerror(L, "loop in gettable");
 }
 
-
+//向table写入
 void luaV_settable (lua_State *L, const TValue *t, TValue *key, StkId val) {
   int loop;
   TValue temp;

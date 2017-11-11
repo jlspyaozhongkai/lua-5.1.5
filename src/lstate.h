@@ -92,8 +92,8 @@ typedef struct global_State {
   TValue l_registry;														//全局的注册表使用伪索引LUA_REGISTRYINDEX
   struct lua_State *mainthread;
   UpVal uvhead;  /* head of double-linked list of all open upvalues */
-  struct Table *mt[NUM_TAGS];  /* metatables for basic types */
-  TString *tmname[TM_N];  /* array with tag-method names */
+  struct Table *mt[NUM_TAGS];  /* metatables for basic types */				//各种数据类型的默认meta table
+  TString *tmname[TM_N];  /* array with tag-method names */					//各种tag的字符形式，比如__index，因为元表里是用string做标的
 } global_State;
 
 

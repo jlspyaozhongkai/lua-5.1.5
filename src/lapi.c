@@ -533,13 +533,13 @@ LUA_API int lua_pushthread (lua_State *L) {
 ** get functions (Lua -> stack)
 */
 
-//
+//lua 运行时操作调用栈，操作指定的table，期间牵扯好多lua元表等高级逻辑
 LUA_API void lua_gettable (lua_State *L, int idx) {
   StkId t;
   lua_lock(L);
   t = index2adr(L, idx);
   api_checkvalidindex(L, t);
-  luaV_gettable(L, t, L->top - 1, L->top - 1);
+  luaV_gettable(L, t, L->top - 1, L->top - 1);	//从指定的表中按照key读取，其间涉及到元表_index
   lua_unlock(L);
 }
 
@@ -644,15 +644,15 @@ LUA_API void lua_getfenv (lua_State *L, int idx) {
 ** set functions (stack -> Lua)
 */
 
-
+//lua运行时，写入table
 LUA_API void lua_settable (lua_State *L, int idx) {
   StkId t;
   lua_lock(L);
   api_checknelems(L, 2);
   t = index2adr(L, idx);
   api_checkvalidindex(L, t);
-  luaV_settable(L, t, L->top - 2, L->top - 1);
-  L->top -= 2;  /* pop index and value */
+  luaV_settable(L, t, L->top - 2, L->top - 1);	//先压入key，再压入 value，再执行set，set没有返回结果
+  L->top -= 2;  /* pop index and value */		//两个全弹出，因为没有结果
   lua_unlock(L);
 }
 
