@@ -165,12 +165,12 @@ LUA_API int lua_gettop (lua_State *L) {
 LUA_API void lua_settop (lua_State *L, int idx) {
   lua_lock(L);
   if (idx >= 0) {
-    api_check(L, idx <= L->stack_last - L->base);
-    while (L->top < L->base + idx)
-      setnilvalue(L->top++);	//全部设置为空，直到偷拍、增长到idx指定的位置
-    L->top = L->base + idx;		//多余
+    api_check(L, idx <= L->stack_last - L->base);	//
+    while (L->top < L->base + idx)					//将调用栈补到那么高
+      setnilvalue(L->top++);						//全部设置为空，直到偷拍、增长到idx指定的位置
+    L->top = L->base + idx;							//最后是top的，如果idx是0，则top和base相等
   }
-  else {
+  else {								//如果输入负数，调用栈会往下减
     api_check(L, -(idx+1) <= (L->top - L->base));
     L->top += idx+1;  /* `subtract' index (index is negative) */
   }
@@ -490,13 +490,13 @@ LUA_API void lua_pushcclosure (lua_State *L, lua_CFunction fn, int n) {
   Closure *cl;
   lua_lock(L);
   luaC_checkGC(L);
-  api_checknelems(L, n);		//n 不能超过调用栈深度
-  cl = luaF_newCclosure(L, n, getcurrenv(L));
+  api_checknelems(L, n);							//n 不能超过调用栈深度
+  cl = luaF_newCclosure(L, n, getcurrenv(L));		//利用现在的环境，创建一个closure环境
   cl->c.f = fn;
   L->top -= n;
   while (n--)
-    setobj2n(L, &cl->c.upvalue[n], L->top+n);
-  setclvalue(L, L->top, cl);
+    setobj2n(L, &cl->c.upvalue[n], L->top+n);		//将upvalue保存
+  setclvalue(L, L->top, cl);						//将这个closure保存到栈顶
   lua_assert(iswhite(obj2gco(cl)));
   api_incr_top(L);
   lua_unlock(L);
@@ -767,23 +767,23 @@ LUA_API int lua_setfenv (lua_State *L, int idx) {
 ** `load' and `call' functions (run Lua code)
 */
 
-
+//调用完成以后调整结果，多个返回值并且，当前的调用栈超了，就调整一下callinfo的调用栈
 #define adjustresults(L,nres) \
     { if (nres == LUA_MULTRET && L->top >= L->ci->top) L->ci->top = L->top; }
 
-
+//检查 参数数量 结果数量
 #define checkresults(L,na,nr) \
-     api_check(L, (nr) == LUA_MULTRET || (L->ci->top - L->top >= (nr) - (na)))
+     api_check(L, (nr) == LUA_MULTRET || (L->ci->top - L->top >= (nr) - (na)))		//多个返回值的就不查了，其他：剩余栈空间  能容纳比参数更多的结果
 	
-
+//调用函数
 LUA_API void lua_call (lua_State *L, int nargs, int nresults) {
   StkId func;
   lua_lock(L);
-  api_checknelems(L, nargs+1);
-  checkresults(L, nargs, nresults);
-  func = L->top - (nargs+1);
-  luaD_call(L, func, nresults);
-  adjustresults(L, nresults);
+  api_checknelems(L, nargs+1);			//调用栈里要有料
+  checkresults(L, nargs, nresults);		//检查返回结果数量是否能够被容纳
+  func = L->top - (nargs+1);			//先压入的函数，再压入参数。
+  luaD_call(L, func, nresults);			//调用函数
+  adjustresults(L, nresults);			//调用返回后调整结果
   lua_unlock(L);
 }
 

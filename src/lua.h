@@ -256,8 +256,11 @@ LUA_API int   (lua_setfenv) (lua_State *L, int idx);
 /*
 ** `load' and `call' functions (load and run Lua code)
 */
+//调用函数
 LUA_API void  (lua_call) (lua_State *L, int nargs, int nresults);
+//调用函数，带保护
 LUA_API int   (lua_pcall) (lua_State *L, int nargs, int nresults, int errfunc);
+//调用C函数
 LUA_API int   (lua_cpcall) (lua_State *L, lua_CFunction func, void *ud);
 LUA_API int   (lua_load) (lua_State *L, lua_Reader reader, void *dt,
                                         const char *chunkname);
@@ -308,15 +311,19 @@ LUA_API void lua_setallocf (lua_State *L, lua_Alloc f, void *ud);
 ** some useful macros
 ** ===============================================================
 */
-
+//调用栈弹出，这个有个减1会负更多
 #define lua_pop(L,n)		lua_settop(L, -(n)-1)
 
+//创建一个空table
 #define lua_newtable(L)		lua_createtable(L, 0, 0)
 
+//先压入function，然后将其设置到全局
 #define lua_register(L,n,f) (lua_pushcfunction(L, (f)), lua_setglobal(L, (n)))
 
+//压入function，function会变clouser以后压到栈顶
 #define lua_pushcfunction(L,f)	lua_pushcclosure(L, (f), 0)
 
+//对象的长度，字符串专用，没特别的
 #define lua_strlen(L,i)		lua_objlen(L, (i))
 
 //判断栈上值是否为function
@@ -338,10 +345,11 @@ LUA_API void lua_setallocf (lua_State *L, lua_Alloc f, void *ud);
 //lua_pushlstring 静态字符版
 #define lua_pushliteral(L, s)	\
 	lua_pushlstring(L, "" s, (sizeof(s)/sizeof(char))-1)
-
+//将刚压入栈的元素通过指定的keys，设置到全局表。
 #define lua_setglobal(L,s)	lua_setfield(L, LUA_GLOBALSINDEX, (s))
+//从全局表中以s为key取值并压入栈
 #define lua_getglobal(L,s)	lua_getfield(L, LUA_GLOBALSINDEX, (s))
-
+//lua_tolstring 的不在乎长度版
 #define lua_tostring(L,i)	lua_tolstring(L, (i), NULL)
 
 
@@ -349,13 +357,13 @@ LUA_API void lua_setallocf (lua_State *L, lua_Alloc f, void *ud);
 /*
 ** compatibility macros and functions
 */
-
+//新建lua状态机
 #define lua_open()	luaL_newstate()
-
+//将注册表取出来放掉栈顶
 #define lua_getregistry(L)	lua_pushvalue(L, LUA_REGISTRYINDEX)
-
+//......
 #define lua_getgccount(L)	lua_gc(L, LUA_GCCOUNT, 0)
-
+//......
 #define lua_Chunkreader		lua_Reader
 #define lua_Chunkwriter		lua_Writer
 
@@ -363,7 +371,7 @@ LUA_API void lua_setallocf (lua_State *L, lua_Alloc f, void *ud);
 /* hack */
 LUA_API void lua_setlevel	(lua_State *from, lua_State *to);
 
-
+//下边都是debug接口了，如果有可能，退后分析。
 /*
 ** {======================================================================
 ** Debug API
