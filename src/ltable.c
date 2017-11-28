@@ -46,25 +46,20 @@
 
 #define MAXASIZE	(1 << MAXBITS)
 
-//通过各种值来的hash，在hash表中定位Node*，对各种hash值求余数
-#define hashpow2(t,n)      (gnode(t, lmod((n), sizenode(t))))
+#define hashpow2(t,n)      (gnode(t, lmod((n), sizenode(t))))			//通过各种值来的hash，在map表中定位首个Node*，对各种hash值按照node部分尺寸求余数
 
-//通过TString，在hash表中定位Node*
-#define hashstr(t,str)  hashpow2(t, (str)->tsv.hash)
+#define hashstr(t,str)  hashpow2(t, (str)->tsv.hash)					//先从TString中取现成的hash值，再通过hash值定位到Node*
 
-//通过bool值，在hash表中定位Node*
-#define hashboolean(t,p)        hashpow2(t, p)
+#define hashboolean(t,p)        hashpow2(t, p)							//通过bool值，在hash表中定位Node*
 
 
 /*
 ** for some types, it is better to avoid modulus by power of 2, as
 ** they tend to have many 2 factors.
 */
-//和hashpow2类似，都是给一个数然后返回Node*
-#define hashmod(t,n)	(gnode(t, ((n) % ((sizenode(t)-1)|1))))
+#define hashmod(t,n)	(gnode(t, ((n) % ((sizenode(t)-1)|1))))			//矫正过的hashpow2，因为有些数据太2幂对齐了
 
-//指针做输入，在hash表中定位Node*
-#define hashpointer(t,p)	hashmod(t, IntPoint(p))
+#define hashpointer(t,p)	hashmod(t, IntPoint(p))						//指针做输入，定位Node*
 
 
 /*
@@ -72,50 +67,44 @@
 */
 #define numints		cast_int(sizeof(lua_Number)/sizeof(int))		//尺寸上，number抵几个int
 
+#define dummynode		(&dummynode_)								//哑表项通常作为指针使用
 
-//哑表项通常作为指针使用
-#define dummynode		(&dummynode_)
-
-//Table map 的哑表项目
-static const Node dummynode_ = {
-  {{NULL}, LUA_TNIL},  /* value */
-  {{{NULL}, LUA_TNIL, NULL}}  /* key */
+static const Node dummynode_ = {									//Table map 的哑表项目
+  {{NULL}, LUA_TNIL},  /* value */									//value的值
+  {{{NULL}, LUA_TNIL, NULL}}  /* key */								//key的值，包括它的next指针
 };
 
 
 /*
 ** hash for lua_Numbers
 */
-//在Table中，通过number 算hash，返回Node
+//在Table中，通过number 算hash，返回第一个Node
 static Node *hashnum (const Table *t, lua_Number n) {
   unsigned int a[numints];
   int i;
   if (luai_numeq(n, 0))  /* avoid problems with -0 */
-    return gnode(t, 0);							//如果key是0就直接返回
+    return gnode(t, 0);							//0 不用计算直接返回
   memcpy(a, &n, sizeof(a));
-  for (i = 1; i < numints; i++) a[0] += a[i];	//归拢到第0个uint上
-  return hashmod(t, a[0]);
+  for (i = 1; i < numints; i++) a[0] += a[i];	//将Number散列到一个uint上
+  return hashmod(t, a[0]);						//数值散列定位到首个Node
 }
-
-
 
 /*
 ** returns the `main' position of an element in a table (that is, the index
 ** of its hash value)
 */
-//各种通过key的TValue定位Node
-static Node *mainposition (const Table *t, const TValue *key) {
+static Node *mainposition (const Table *t, const TValue *key) {		//各种通过key的TValue定位Node
   switch (ttype(key)) {
     case LUA_TNUMBER:
-      return hashnum(t, nvalue(key));		//Number 使用自身的值做hash
+      return hashnum(t, nvalue(key));									//Number 使用自身的值做hash
     case LUA_TSTRING:
-      return hashstr(t, rawtsvalue(key));	//TString 的指针，是gc对象的指针
+      return hashstr(t, rawtsvalue(key));								//TString 的指针，是gc对象的指针
     case LUA_TBOOLEAN:
-      return hashboolean(t, bvalue(key));	//Boolean 使用值做hash
+      return hashboolean(t, bvalue(key));								//Boolean 使用值做hash
     case LUA_TLIGHTUSERDATA:
-      return hashpointer(t, pvalue(key));	//指针类型地址
+      return hashpointer(t, pvalue(key));								//指针类型地址
     default:
-      return hashpointer(t, gcvalue(key));	//其他类型使用使用gc对象的指针
+      return hashpointer(t, gcvalue(key));								//其他类型使用使用gc对象的指针
   }
 }
 
@@ -266,42 +255,36 @@ static int numusehash (const Table *t, int *nums, int *pnasize) {
   return totaluse;
 }
 
-//给Table array分配内存，有时候是重新分配内存
-static void setarrayvector (lua_State *L, Table *t, int size) {
+static void setarrayvector (lua_State *L, Table *t, int size) {			//给Table array分配内存，有时候是重新分配内存
   int i;
-  luaM_reallocvector(L, t->array, t->sizearray, size, TValue);
-  //新增部分设置为nil
-  for (i=t->sizearray; i<size; i++)
+  luaM_reallocvector(L, t->array, t->sizearray, size, TValue);			//重新分配内存
+  for (i=t->sizearray; i<size; i++)										//新增部分设置为nil
      setnilvalue(&t->array[i]);
-  //更新长度
-  t->sizearray = size;
+  t->sizearray = size;													//更新长度
 }
 
-//给Table map分配内存
-static void setnodevector (lua_State *L, Table *t, int size) {
+static void setnodevector (lua_State *L, Table *t, int size) {			//给Table map分配内存
   int lsize;
-  if (size == 0) {  /* no elements to hash part? */
+  if (size == 0) {  /* no elements to hash part? */						//0长度的map表
     t->node = cast(Node *, dummynode);  /* use common `dummynode' */
     lsize = 0;
   }
-  else {
+  else {																//分配map表，不过这里没见着map表扩充
     int i;
-	//计算log值
-    lsize = ceillog2(size);
+    lsize = ceillog2(size);												//计算map表的尺寸 的log值
     if (lsize > MAXBITS)
-      luaG_runerror(L, "table overflow");
-	//重新计算size
-    size = twoto(lsize);
-    t->node = luaM_newvector(L, size, Node);
+      luaG_runerror(L, "table overflow");								//太大了
+    size = twoto(lsize);												//重新计算size，log 对齐过的
+    t->node = luaM_newvector(L, size, Node);							//重新分配map表内存
     for (i=0; i<size; i++) {
-      Node *n = gnode(t, i);		//Table map表，表项的指针
-      gnext(n) = NULL;				//下一个节点是空
-      setnilvalue(gkey(n));			//当前节点的key为nil
-      setnilvalue(gval(n));			//当前节点的值设置为nil
+      Node *n = gnode(t, i);											//Table map表，表项的指针
+      gnext(n) = NULL;													//下一个节点是空
+      setnilvalue(gkey(n));												//当前节点的key为nil
+      setnilvalue(gval(n));												//当前节点的值设置为nil
     }
   }
-  t->lsizenode = cast_byte(lsize);
-  t->lastfree = gnode(t, size);  /* all positions are free */
+  t->lsizenode = cast_byte(lsize);										//map表的尺寸，使用log值
+  t->lastfree = gnode(t, size);  /* all positions are free */			//map表越界的位置
 }
 
 
@@ -375,35 +358,26 @@ static void rehash (lua_State *L, Table *t, const TValue *ek) {
 ** }=============================================================
 */
 
-//创建Table
-Table *luaH_new (lua_State *L, int narray, int nhash) {
-  //分内存
-  Table *t = luaM_new(L, Table);
-  //向lua_State登记这个Table
-  luaC_link(L, obj2gco(t), LUA_TTABLE);
+Table *luaH_new (lua_State *L, int narray, int nhash) {			//创建Table
+  Table *t = luaM_new(L, Table);								//分内存
+  luaC_link(L, obj2gco(t), LUA_TTABLE);							//向lua_State登记这个Table
   t->metatable = NULL;
   t->flags = cast_byte(~0);
-  //先给配置个临时值
-  /* temporary values (kept only if some malloc fails) */
+  /* temporary values (kept only if some malloc fails) */		//先给配置个临时值
   t->array = NULL;
   t->sizearray = 0;
   t->lsizenode = 0;
   t->node = cast(Node *, dummynode);
-  //分配内存
-  setarrayvector(L, t, narray);
-  setnodevector(L, t, nhash);
+  setarrayvector(L, t, narray);									//扩充数组表
+  setnodevector(L, t, nhash);									//重新分配map表
   return t;
 }
 
-//释放Table
-void luaH_free (lua_State *L, Table *t) {
-  //释放map表
-  if (t->node != dummynode)
+void luaH_free (lua_State *L, Table *t) {						//释放Table
+  if (t->node != dummynode)										//释放map表，0长度的map表为dummy，不用释放
     luaM_freearray(L, t->node, sizenode(t), Node);
-  //释放数组表
-  luaM_freearray(L, t->array, t->sizearray, TValue);
-  //释放掉表
-  luaM_free(L, t);
+  luaM_freearray(L, t->array, t->sizearray, TValue);			//释放数组表
+  luaM_free(L, t);												//释放掉表
 }
 
 
@@ -424,10 +398,9 @@ static Node *getfreepos (Table *t) {
 ** put new key in its main position; otherwise (colliding node is in its main 
 ** position), new key goes to an empty position. 
 */
-//根据key新建一个TValue
-static TValue *newkey (lua_State *L, Table *t, const TValue *key) {
-  Node *mp = mainposition(t, key);					//首先定位到Node*
-  if (!ttisnil(gval(mp)) || mp == dummynode) {		//如果mp不为nil，就是正在用
+static TValue *newkey (lua_State *L, Table *t, const TValue *key) {					//在要设置但是没有对应key的情况下，根据key新建一个table key
+  Node *mp = mainposition(t, key);													//首先根据在这个key的hash值，定位到Node*，mp就是mainposition的意思
+  if (!ttisnil(gval(mp)) || mp == dummynode) {										//首个Node，如果是不是nil值，那么就是被使用着（否则就直接赋值了）
     Node *othern;
     Node *n = getfreepos(t);  /* get a free place */
     if (n == NULL) {  /* cannot find a free place? */
@@ -451,115 +424,105 @@ static TValue *newkey (lua_State *L, Table *t, const TValue *key) {
       mp = n;
     }
   }
-  gkey(mp)->value = key->value; gkey(mp)->tt = key->tt;		//往mp的key上赋值，然后将mp的值返回（mp是空着的）
+  gkey(mp)->value = key->value; gkey(mp)->tt = key->tt;								//mp 来做key了，key的部分按照参数key 赋值类型和值
   luaC_barriert(L, t, key);
-  lua_assert(ttisnil(gval(mp)));
-  return gval(mp);
+  lua_assert(ttisnil(gval(mp)));													//新建的mp，其value一定是nil的
+  return gval(mp);																	//value返回去，去给做修改
 }
 
 
 /*
 ** search function for integers
 */
-//通过数字索引找成员
-const TValue *luaH_getnum (Table *t, int key) {
+const TValue *luaH_getnum (Table *t, int key) {							//通过数字索引找成员
   /* (1 <= key && key <= t->sizearray) */
-  //内部下标还是从0开始的
-  if (cast(unsigned int, key-1) < cast(unsigned int, t->sizearray))
-    return &t->array[key-1];		//将TValue返回
-  else {
-  	//否在在map里找
+  if (cast(unsigned int, key-1) < cast(unsigned int, t->sizearray))		//内部下标还是从0开始的，先尝试在数组中查找
+    return &t->array[key-1];											//将TValue返回
+  else {																//否则在map里找
     lua_Number nk = cast_num(key);
-    Node *n = hashnum(t, nk);
+    Node *n = hashnum(t, nk);											//到map找到首个节点
     do {  /* check whether `key' is somewhere in the chain */
-      //找到Node只是开始，现在遍历链表，主要是比较key，需要key是nunber，且值相等
-      if (ttisnumber(gkey(n)) && luai_numeq(nvalue(gkey(n)), nk))
-        return gval(n);  /* that's it */
+      if (ttisnumber(gkey(n)) && luai_numeq(nvalue(gkey(n)), nk))		//遍历链表比较检查Node，比较类型和数值
+        return gval(n);  /* that's it */								//找到了就返回
       else n = gnext(n);
-    } while (n);
-    return luaO_nilobject;			//没找到nil了
+    } while (n);														//没有next就结束吧，会返回luaO_nilobject
+    return luaO_nilobject;
   }
 }
-
 
 /*
 ** search function for strings
 */
-//通过String 读取table的值
-const TValue *luaH_getstr (Table *t, TString *key) {
-  Node *n = hashstr(t, key);									//在hash中找到节点
+const TValue *luaH_getstr (Table *t, TString *key) {					//通过String 读取table的值
+  Node *n = hashstr(t, key);											//在hash中找到节点，因为没有必要在数组中找
   do {  /* check whether `key' is somewhere in the chain */
-    if (ttisstring(gkey(n)) && rawtsvalue(gkey(n)) == key)		//是string类型，也要相等，相等比较的是gc对象指针
+    if (ttisstring(gkey(n)) && rawtsvalue(gkey(n)) == key)				//是string类型，也要相等，相等比较的是gc对象指针
       return gval(n);  /* that's it */
     else n = gnext(n);
-  } while (n);
-  return luaO_nilobject;	//遍历完没找着
+  } while (n);															//没有next就结束吧，会返回luaO_nilobject
+  return luaO_nilobject;
 }
 
 
 /*
 ** main search function
 */
-//通过key在Table中查找
-const TValue *luaH_get (Table *t, const TValue *key) {
+const TValue *luaH_get (Table *t, const TValue *key) {					//通过key在Table中查找
   switch (ttype(key)) {
-    case LUA_TNIL: return luaO_nilobject;
-    case LUA_TSTRING: return luaH_getstr(t, rawtsvalue(key));
-    case LUA_TNUMBER: {	//Number可能是int 也可能是double，double不能做数组
+    case LUA_TNIL: return luaO_nilobject;								//nil就不给他返回
+    case LUA_TSTRING: return luaH_getstr(t, rawtsvalue(key));			//string类型，先取其TString
+    case LUA_TNUMBER: {													//Number可能是int 也可能是double，double不能做数组
       int k;
       lua_Number n = nvalue(key);
-      lua_number2int(k, n);
-      if (luai_numeq(cast_num(k), nvalue(key))) /* index is int? */
+      lua_number2int(k, n);												//Number转int
+      if (luai_numeq(cast_num(k), nvalue(key))) /* index is int? */		//测试其是否为int，不是int的就当做普通对象来处理了
         return luaH_getnum(t, k);  /* use specialized version */
       /* else go through */
     }
     default: {
-      Node *n = mainposition(t, key);	//通用的定位Node
+      Node *n = mainposition(t, key);									//通用的定位Node
       do {  /* check whether `key' is somewhere in the chain */
-        if (luaO_rawequalObj(key2tval(n), key))		//通用的比较对象
+        if (luaO_rawequalObj(key2tval(n), key))							//遍历node链，比较当前key与输入key
           return gval(n);  /* that's it */
         else n = gnext(n);
-      } while (n);
+      } while (n);														//没有next就结束吧，会返回luaO_nilobject
       return luaO_nilobject;
     }
   }
 }
 
-//通用的table写
-TValue *luaH_set (lua_State *L, Table *t, const TValue *key) {
-  const TValue *p = luaH_get(t, key);		//先找一下
-  t->flags = 0;								//有设置动作就清一清
-  if (p != luaO_nilobject)
+TValue *luaH_set (lua_State *L, Table *t, const TValue *key) {			//通用的table写
+  const TValue *p = luaH_get(t, key);									//先找一下
+  t->flags = 0;															//有设置动作就清一清
+  if (p != luaO_nilobject)												//如果找到了，就直接返回去，要改是外边的事
     return cast(TValue *, p);
   else {
-    if (ttisnil(key)) luaG_runerror(L, "table index is nil");
-    else if (ttisnumber(key) && luai_numisnan(nvalue(key)))	//Double里的无效值
+    if (ttisnil(key)) luaG_runerror(L, "table index is nil");			//nil 不能做key
+    else if (ttisnumber(key) && luai_numisnan(nvalue(key)))				//Double里的无效值也不能做key
       luaG_runerror(L, "table index is NaN");
-    return newkey(L, t, key);
+    return newkey(L, t, key);											//去新建一个key，因为前边找不到
   }
 }
 
-//Table中通过key设置值，返回现在或者新建值，返回后改不改由你
-TValue *luaH_setnum (lua_State *L, Table *t, int key) {
-  const TValue *p = luaH_getnum(t, key);	//先找看有没有，如果有就返回
+TValue *luaH_setnum (lua_State *L, Table *t, int key) {					//Table中通过key设置值
+  const TValue *p = luaH_getnum(t, key);								//先找看有没有，如果有就返回
   if (p != luaO_nilobject)
     return cast(TValue *, p);
   else {
     TValue k;
-    setnvalue(&k, cast_num(key));			//先准备好key
-    return newkey(L, t, &k);				//然后使用key新建一个TValue返回
+    setnvalue(&k, cast_num(key));										//先准备好key
+    return newkey(L, t, &k);											//然后使用key新建一个TValue返回
   }
 }
 
-//通过String往Table里设置值，返回已有或者新建值，返回后改不改由你
-TValue *luaH_setstr (lua_State *L, Table *t, TString *key) {
-  const TValue *p = luaH_getstr(t, key);	//先找找看有没有，如果有就直接返回
+TValue *luaH_setstr (lua_State *L, Table *t, TString *key) {			//通过String往Table里设置值
+  const TValue *p = luaH_getstr(t, key);								//先找找看有没有，如果有就直接返回
   if (p != luaO_nilobject)
     return cast(TValue *, p);
   else {
     TValue k;
-    setsvalue(L, &k, key);					//先准备好key
-    return newkey(L, t, &k);				//然后使用key新建一个TValue返回
+    setsvalue(L, &k, key);												//先准备好key
+    return newkey(L, t, &k);											//然后使用key新建一个TValue返回
   }
 }
 

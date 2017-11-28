@@ -9,16 +9,38 @@
 
 #include "lobject.h"
 
-//通过Table取其node指针数组
-#define gnode(t,i)	(&(t)->node[i])
-//Table node的key
-#define gkey(n)		(&(n)->i_key.nk)
-//Table node的value
-#define gval(n)		(&(n)->i_val)
-//Table node的next，是宏，支持赋值
-#define gnext(n)	((n)->i_key.nk.next)
-//Table 的key是一个值和next的组合，这里只取其值的部分，忽视next
-#define key2tval(n)	(&(n)->i_key.tvk)
+/*
+typedef union TKey {
+  struct {
+    TValuefields;
+    struct Node *next;
+  } nk;
+  TValue tvk;
+} TKey;
+
+typedef struct Node {
+  TValue i_val;
+  TKey i_key;
+} Node;
+
+typedef struct Table {
+  CommonHeader;
+  lu_byte flags;
+  lu_byte lsizenode;
+  struct Table *metatable;
+  TValue *array;
+  Node *node;
+  Node *lastfree;
+  GCObject *gclist;
+  int sizearray;
+} Table;
+*/
+
+#define gnode(t,i)	(&(t)->node[i])				//通过Table取其node指针数组
+#define gkey(n)		(&(n)->i_key.nk)			//Table node的key(这个多带一个next)
+#define gval(n)		(&(n)->i_val)				//Table node的value
+#define gnext(n)	((n)->i_key.nk.next)		//Table node的next，是宏，支持赋值
+#define key2tval(n)	(&(n)->i_key.tvk)			//Table node的key(这个不带next)
 
 //通过数值索引读取table值
 LUAI_FUNC const TValue *luaH_getnum (Table *t, int key);

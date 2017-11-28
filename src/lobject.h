@@ -361,25 +361,22 @@ typedef union Closure {
 /*
 ** Tables
 */
-//map 表项的key，不只是关联一个key数据，还要组织hash链表
-typedef union TKey {
+typedef union TKey {						//Map表的key
   struct {
-    TValuefields;							//和TValue相同，只是拿出来用了
-    struct Node *next;  /* for chaining */	//指向下一个Node
-  } nk;
-  TValue tvk;								//当把TKey当TValue来用，忽视后边的next，就是使用这个成员
+    TValuefields;
+    struct Node *next;  /* for chaining */
+  } nk;										//Union当key用，还有个next
+  TValue tvk;								//Union当key用
 } TKey;
 
-//Table map 的key value 组合
-typedef struct Node {
+typedef struct Node {						//Table map 的key value 组合
   TValue i_val;								//map表项的值
   TKey i_key;								//map表项的key
 } Node;
 
-//Table结构
-typedef struct Table {
+typedef struct Table {												//Table结构
   CommonHeader;														//公共头
-  lu_byte flags;  /* 1<<p means tagmethod(p) is not present */ 		//元方法bit位，首次使用时更新，有bit代表未设置
+  lu_byte flags;  /* 1<<p means tagmethod(p) is not present */ 		//元方法bit位，首次使用时更新
   lu_byte lsizenode;  /* log2 of size of `node' array */			//map表大小，2的lsizenode次幂个，其实很大
   struct Table *metatable;											//表的元表
   TValue *array;  /* array part */									//表数组部分的TValue们
@@ -398,19 +395,15 @@ typedef struct Table {
 #define lmod(s,size) \
 	(check_exp((size&(size-1))==0, (cast(int, (s) & ((size)-1)))))
 
-//2的x幂
-#define twoto(x)	(1<<(x))
-//求Table的hash表尺寸
-#define sizenode(t)	(twoto((t)->lsizenode))
 
-//这样nil和nil就相等了，同时也能统一处理
-#define luaO_nilobject		(&luaO_nilobject_)
+#define twoto(x)	(1<<(x))					//2的x幂
+#define sizenode(t)	(twoto((t)->lsizenode))		//求Table的map表尺寸
 
-//声明之
-LUAI_DATA const TValue luaO_nilobject_;
+#define luaO_nilobject		(&luaO_nilobject_)	//这样nil和nil就相等了，同时也能统一处理
 
-//给Table的map 按照项数量，计算以2为底的log值（往大分，先减后加）
-#define ceillog2(x)	(luaO_log2((x)-1) + 1)
+LUAI_DATA const TValue luaO_nilobject_;			//const TValue luaO_nilobject_ = {{NULL}, LUA_TNIL};
+
+#define ceillog2(x)	(luaO_log2((x)-1) + 1)		//给Table的map 按照项数量，计算以2为底的log值（往大分，先减后加）
 
 LUAI_FUNC int luaO_log2 (unsigned int x);
 LUAI_FUNC int luaO_int2fb (unsigned int x);

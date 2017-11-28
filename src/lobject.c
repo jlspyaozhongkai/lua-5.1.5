@@ -70,21 +70,20 @@ int luaO_log2 (unsigned int x) {
 
 }
 
-//通用的比较对象
-int luaO_rawequalObj (const TValue *t1, const TValue *t2) {
-  if (ttype(t1) != ttype(t2)) return 0;		//先比较类型
+int luaO_rawequalObj (const TValue *t1, const TValue *t2) {				//通用的比较对象
+  if (ttype(t1) != ttype(t2)) return 0;									//先比较类型，类型不同就不要比了
   else switch (ttype(t1)) {
-    case LUA_TNIL:							//nil没有值，不用比，直接过。
+    case LUA_TNIL:														//nil没有值，不用比，连个nil是相等的
       return 1;
-    case LUA_TNUMBER:
-      return luai_numeq(nvalue(t1), nvalue(t2));	//Number 值比一比
-    case LUA_TBOOLEAN:
-      return bvalue(t1) == bvalue(t2);  /* boolean true must be 1 !! */	//Boolean 值比
-    case LUA_TLIGHTUSERDATA:						//指针比指针
+    case LUA_TNUMBER:													//Number 值比一比
+      return luai_numeq(nvalue(t1), nvalue(t2));
+    case LUA_TBOOLEAN:													//Boolean 值比
+      return bvalue(t1) == bvalue(t2);  /* boolean true must be 1 !! */
+    case LUA_TLIGHTUSERDATA:											//指针比指针
       return pvalue(t1) == pvalue(t2);
     default:
       lua_assert(iscollectable(t1));
-      return gcvalue(t1) == gcvalue(t2);			//其他只gc对象指针
+      return gcvalue(t1) == gcvalue(t2);								//其他只gc对象指针
   }
 }
 
