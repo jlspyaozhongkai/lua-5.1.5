@@ -19,10 +19,10 @@ struct lua_longjmp;  /* defined in ldo.c */
 
 
 /* table of globals */
-#define gt(L)	(&L->l_gt)
+#define gt(L)	(&L->l_gt)					//状态机的全局变量表,_G,使用LUA_GLOBALSINDEX定位
 
 /* registry */
-#define registry(L)	(&G(L)->l_registry)
+#define registry(L)	(&G(L)->l_registry)		//状态机的注册表, 是所有状态机的注册表，使用LUA_REGISTRYINDEX定位
 
 
 /* extra stack space to handle TM calls and some other extras */
@@ -47,20 +47,20 @@ typedef struct stringtable {
 */
 //函数调用信息
 typedef struct CallInfo {
-  StkId base;  /* base for this function */
-  StkId func;  /* function index in the stack */
+  StkId base;  /* base for this function */								//调用栈的栈底
+  StkId func;  /* function index in the stack */						//调用的函数
   StkId	top;  /* top for this function */								//调用栈的栈顶
-  const Instruction *savedpc;
-  int nresults;  /* expected number of results from this function */
-  int tailcalls;  /* number of tail calls lost under this entry */
+  const Instruction *savedpc;											//调用时保存的指令地址，应该是下一条指令
+  int nresults;  /* expected number of results from this function */	//
+  int tailcalls;  /* number of tail calls lost under this entry */		//
 } CallInfo;
 
 
 
-#define curr_func(L)	(clvalue(L->ci->func))
-#define ci_func(ci)	(clvalue((ci)->func))
-#define f_isLua(ci)	(!ci_func(ci)->c.isC)
-#define isLua(ci)	(ttisfunction((ci)->func) && f_isLua(ci))
+#define curr_func(L)	(clvalue(L->ci->func))					//取当前调用函数的 Closure函数对象
+#define ci_func(ci)	(clvalue((ci)->func))						//从callinfo中取 Closure函数对象
+#define f_isLua(ci)	(!ci_func(ci)->c.isC)						//从callinfo中取 Closure函数对象 是否为C函数
+#define isLua(ci)	(ttisfunction((ci)->func) && f_isLua(ci))	//从callinfo中取 判断函数对象，再判断是否是lua
 
 
 /*
@@ -89,11 +89,11 @@ typedef struct global_State {
   int gcpause;  /* size of pause between successive GCs */
   int gcstepmul;  /* GC `granularity' */
   lua_CFunction panic;  /* to be called in unprotected errors */
-  TValue l_registry;
+  TValue l_registry;														//全局的注册表使用伪索引LUA_REGISTRYINDEX
   struct lua_State *mainthread;
   UpVal uvhead;  /* head of double-linked list of all open upvalues */
-  struct Table *mt[NUM_TAGS];  /* metatables for basic types */
-  TString *tmname[TM_N];  /* array with tag-method names */
+  struct Table *mt[NUM_TAGS];  /* metatables for basic types */				//各种数据类型的默认meta table
+  TString *tmname[TM_N];  /* array with tag-method names */					//各种tag的字符形式，比如__index，因为元表里是用string做标的
 } global_State;
 
 
@@ -109,8 +109,8 @@ struct lua_State {
   global_State *l_G;														//每个调用栈都共用一个全局资源对象
   CallInfo *ci;  /* call info for current function */						//当前的调用函数info
   const Instruction *savedpc;  /* `savedpc' of current function */
-  StkId stack_last;  /* last free slot in the stack */
-  StkId stack;  /* stack base */
+  StkId stack_last;  /* last free slot in the stack */						//调用栈的最大处
+  StkId stack;  /* stack base */											//调用栈的开始处
   CallInfo *end_ci;  /* points after end of ci array*/
   CallInfo *base_ci;  /* array of CallInfo's */
   int stacksize;
@@ -122,9 +122,9 @@ struct lua_State {
   int basehookcount;
   int hookcount;
   lua_Hook hook;
-  TValue l_gt;  /* table of globals */
-  TValue env;  /* temporary place for environments */
-  GCObject *openupval;  /* list of open upvalues in this stack */
+  TValue l_gt;  /* table of globals */										//状态机的全局表，全局_G
+  TValue env;  /* temporary place for environments */						//临时环境
+  GCObject *openupval;  /* list of open upvalues in this stack */			
   GCObject *gclist;
   struct lua_longjmp *errorJmp;  /* current error recover point */
   ptrdiff_t errfunc;  /* current error handling function (stack index) */

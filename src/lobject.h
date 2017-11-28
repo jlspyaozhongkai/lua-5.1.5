@@ -327,25 +327,26 @@ typedef struct UpVal {
 /*
 ** Closures
 */
-
+//函数类的公共头：isC 是否为C函数，函数有自己的环境（全局变量）env，gc 什么的就先不管了。
 #define ClosureHeader \
 	CommonHeader; lu_byte isC; lu_byte nupvalues; GCObject *gclist; \
 	struct Table *env
 
+//C 函数
 typedef struct CClosure {
   ClosureHeader;
   lua_CFunction f;
   TValue upvalue[1];
 } CClosure;
 
-
+//Lua 函数
 typedef struct LClosure {
   ClosureHeader;
   struct Proto *p;
   UpVal *upvals[1];
 } LClosure;
 
-
+//合并两种函数
 typedef union Closure {
   CClosure c;
   LClosure l;

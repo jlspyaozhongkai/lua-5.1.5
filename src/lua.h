@@ -29,17 +29,25 @@
 /* option for multiple returns in `lua_pcall' and `lua_call' */
 #define LUA_MULTRET	(-1)
 
+//
+//http://www.lua.org/manual/5.1/
+//
 
 /*
 ** pseudo-indices
 */
-#define LUA_REGISTRYINDEX	(-10000)
-#define LUA_ENVIRONINDEX	(-10001)
-#define LUA_GLOBALSINDEX	(-10002)
-#define lua_upvalueindex(i)	(LUA_GLOBALSINDEX-(i))
+//为了避免这个问题，Lua提供了一个独立的被称为registry的表，C代码可以自由使用，但Lua代码不能访问他。
+//http://www.lua.org/manual/5.1/manual.html#pdf-LUA_REGISTRYINDEX
+//指定调用栈上索引时，会使用这些特殊宏定义
+                                                        //-1 到 LUA_REGISTRYINDEX 之间是从栈的top往下找索引
+#define LUA_REGISTRYINDEX	(-10000)					//注册表的调用栈假索引
+#define LUA_ENVIRONINDEX	(-10001)					//C 函数所对应的 环境
+#define LUA_GLOBALSINDEX	(-10002)					//Lua 中的全局环境
+#define lua_upvalueindex(i)	(LUA_GLOBALSINDEX-(i))		//比LUA_GLOBALSINDEX数更小的是upvalue的索引了
 
 
 /* thread status; 0 is OK */
+//线程的状态
 #define LUA_YIELD	1
 #define LUA_ERRRUN	2
 #define LUA_ERRSYNTAX	3
@@ -119,14 +127,21 @@ LUA_API lua_CFunction (lua_atpanic) (lua_State *L, lua_CFunction panicf);
 /*
 ** basic stack manipulation
 */
+//调用栈操作 取top
 LUA_API int   (lua_gettop) (lua_State *L);
+//调用栈操作      填充调用栈 使用nil
 LUA_API void  (lua_settop) (lua_State *L, int idx);
+//调用栈操作 取调用栈上指定位置的值 压入调用栈
 LUA_API void  (lua_pushvalue) (lua_State *L, int idx);
+//调用栈操作 抽掉指定的变量
 LUA_API void  (lua_remove) (lua_State *L, int idx);
+//调用栈操作 在指定的位置插入top
 LUA_API void  (lua_insert) (lua_State *L, int idx);
+//调用栈操作 在调用栈上替换 TODO 没分析完
 LUA_API void  (lua_replace) (lua_State *L, int idx);
+//调用栈操作 TODO 没分析完
 LUA_API int   (lua_checkstack) (lua_State *L, int sz);
-
+//调用栈操作， 状态机之间转义 变量
 LUA_API void  (lua_xmove) (lua_State *from, lua_State *to, int n);
 
 
@@ -151,7 +166,6 @@ LUA_API int            (lua_equal) (lua_State *L, int idx1, int idx2);
 LUA_API int            (lua_rawequal) (lua_State *L, int idx1, int idx2);
 //调用栈上 两值 小于比较
 LUA_API int            (lua_lessthan) (lua_State *L, int idx1, int idx2);
-
 //--------下面的操作经常会改变对象本身，就是将对象做转换了。
 //调用栈上值 转 number
 LUA_API lua_Number      (lua_tonumber) (lua_State *L, int idx);
@@ -204,33 +218,49 @@ LUA_API int   (lua_pushthread) (lua_State *L);
 /*
 ** get functions (Lua -> stack)
 */
-//
+//lua运行时，读取table
 LUA_API void  (lua_gettable) (lua_State *L, int idx);
+//lua运行时，通过制定的字符串做key，读取table
 LUA_API void  (lua_getfield) (lua_State *L, int idx, const char *k);
+//lua运行时，rawget 不走元表
 LUA_API void  (lua_rawget) (lua_State *L, int idx);
+//lua运行时，rawget 索引版
 LUA_API void  (lua_rawgeti) (lua_State *L, int idx, int n);
+//lua运行时，创建table
 LUA_API void  (lua_createtable) (lua_State *L, int narr, int nrec);
+//lua运行时，创建userdata
 LUA_API void *(lua_newuserdata) (lua_State *L, size_t sz);
+//lua运行时，获取栈上对象元表
 LUA_API int   (lua_getmetatable) (lua_State *L, int objindex);
+//lua运行时，获取栈上对象的env
 LUA_API void  (lua_getfenv) (lua_State *L, int idx);
 
 
 /*
 ** set functions (stack -> Lua)
 */
+//lua运行时，写入table
 LUA_API void  (lua_settable) (lua_State *L, int idx);
+//lua运行时，通过制定的字符串做key，写入table
 LUA_API void  (lua_setfield) (lua_State *L, int idx, const char *k);
+//lua运行时，rawset 不走元表
 LUA_API void  (lua_rawset) (lua_State *L, int idx);
+//lua运行时，rawset 索引版
 LUA_API void  (lua_rawseti) (lua_State *L, int idx, int n);
+//lua运行时，设置栈上对象元表
 LUA_API int   (lua_setmetatable) (lua_State *L, int objindex);
+//lua运行时，设置栈上对象的env
 LUA_API int   (lua_setfenv) (lua_State *L, int idx);
 
 
 /*
 ** `load' and `call' functions (load and run Lua code)
 */
+//调用函数
 LUA_API void  (lua_call) (lua_State *L, int nargs, int nresults);
+//调用函数，带保护
 LUA_API int   (lua_pcall) (lua_State *L, int nargs, int nresults, int errfunc);
+//调用C函数
 LUA_API int   (lua_cpcall) (lua_State *L, lua_CFunction func, void *ud);
 LUA_API int   (lua_load) (lua_State *L, lua_Reader reader, void *dt,
                                         const char *chunkname);
@@ -281,15 +311,19 @@ LUA_API void lua_setallocf (lua_State *L, lua_Alloc f, void *ud);
 ** some useful macros
 ** ===============================================================
 */
-
+//调用栈弹出，这个有个减1会负更多
 #define lua_pop(L,n)		lua_settop(L, -(n)-1)
 
+//创建一个空table
 #define lua_newtable(L)		lua_createtable(L, 0, 0)
 
+//先压入function，然后将其设置到全局
 #define lua_register(L,n,f) (lua_pushcfunction(L, (f)), lua_setglobal(L, (n)))
 
+//压入function，function会变clouser以后压到栈顶
 #define lua_pushcfunction(L,f)	lua_pushcclosure(L, (f), 0)
 
+//对象的长度，字符串专用，没特别的
 #define lua_strlen(L,i)		lua_objlen(L, (i))
 
 //判断栈上值是否为function
@@ -308,13 +342,14 @@ LUA_API void lua_setallocf (lua_State *L, lua_Alloc f, void *ud);
 #define lua_isnone(L,n)		(lua_type(L, (n)) == LUA_TNONE)
 //判断栈上值是否为 不怎样
 #define lua_isnoneornil(L, n)	(lua_type(L, (n)) <= 0)
-
+//lua_pushlstring 静态字符版
 #define lua_pushliteral(L, s)	\
 	lua_pushlstring(L, "" s, (sizeof(s)/sizeof(char))-1)
-
+//将刚压入栈的元素通过指定的keys，设置到全局表。
 #define lua_setglobal(L,s)	lua_setfield(L, LUA_GLOBALSINDEX, (s))
+//从全局表中以s为key取值并压入栈
 #define lua_getglobal(L,s)	lua_getfield(L, LUA_GLOBALSINDEX, (s))
-
+//lua_tolstring 的不在乎长度版
 #define lua_tostring(L,i)	lua_tolstring(L, (i), NULL)
 
 
@@ -322,13 +357,13 @@ LUA_API void lua_setallocf (lua_State *L, lua_Alloc f, void *ud);
 /*
 ** compatibility macros and functions
 */
-
+//新建lua状态机
 #define lua_open()	luaL_newstate()
-
+//将注册表取出来放掉栈顶
 #define lua_getregistry(L)	lua_pushvalue(L, LUA_REGISTRYINDEX)
-
+//......
 #define lua_getgccount(L)	lua_gc(L, LUA_GCCOUNT, 0)
-
+//......
 #define lua_Chunkreader		lua_Reader
 #define lua_Chunkwriter		lua_Writer
 
@@ -336,7 +371,7 @@ LUA_API void lua_setallocf (lua_State *L, lua_Alloc f, void *ud);
 /* hack */
 LUA_API void lua_setlevel	(lua_State *from, lua_State *to);
 
-
+//下边都是debug接口了，如果有可能，退后分析。
 /*
 ** {======================================================================
 ** Debug API

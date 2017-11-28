@@ -19,7 +19,7 @@
 #include "ltm.h"
 
 
-
+//各种数据类型对应的名字
 const char *const luaT_typenames[] = {
   "nil", "boolean", "userdata", "number",
   "string", "table", "function", "userdata", "thread",
@@ -28,6 +28,7 @@ const char *const luaT_typenames[] = {
 
 
 void luaT_init (lua_State *L) {
+  //元表中各种操作对应的名字
   static const char *const luaT_eventname[] = {  /* ORDER TM */
     "__index", "__newindex",
     "__gc", "__mode", "__eq",
@@ -37,8 +38,8 @@ void luaT_init (lua_State *L) {
   };
   int i;
   for (i=0; i<TM_N; i++) {
-    G(L)->tmname[i] = luaS_new(L, luaT_eventname[i]);
-    luaS_fix(G(L)->tmname[i]);  /* never collect these names */
+    G(L)->tmname[i] = luaS_new(L, luaT_eventname[i]);	//给tmname赋值，将来好用好用数字宏获得
+    luaS_fix(G(L)->tmname[i]);  /* never collect these names */		//这个不要被gc回收
   }
 }
 
@@ -57,7 +58,7 @@ const TValue *luaT_gettm (Table *events, TMS event, TString *ename) {
   else return tm;
 }
 
-
+//获得对象的 metatable，然后按照event对应的字符型key找数据，比如__index 等，都和元表的作用有关。
 const TValue *luaT_gettmbyobj (lua_State *L, const TValue *o, TMS event) {
   Table *mt;
   switch (ttype(o)) {
@@ -68,8 +69,9 @@ const TValue *luaT_gettmbyobj (lua_State *L, const TValue *o, TMS event) {
       mt = uvalue(o)->metatable;
       break;
     default:
-      mt = G(L)->mt[ttype(o)];
+      mt = G(L)->mt[ttype(o)];			//先取得对象的元表
   }
+  //如果有元表，从元表换算得的__index等下标中读取值
   return (mt ? luaH_getstr(mt, G(L)->tmname[event]) : luaO_nilobject);
 }
 
