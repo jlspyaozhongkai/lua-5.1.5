@@ -181,25 +181,25 @@ int luaH_next (lua_State *L, Table *t, StkId key) {
 */
 
 
-static int computesizes (int nums[], int *narray) {								//计算新的数组部分信息
-  int i;																		//
-  int twotoi;  /* 2^i */														//
-  int a = 0;  /* number of elements smaller than 2^i */							//
+static int computesizes (int nums[], int *narray) {								//计算新的数组部分信息 （计算数组的尺寸和统计数值key的数量）
+  int i;																		//依次扫描，满足条件时就设置，最后一次被设置的就是尺寸
+  int twotoi;  /* 2^i */														//2的i次幂，这个值的一般很有意义
+  int a = 0;  /* number of elements smaller than 2^i */							//已经被扫描过的部分，数字键的数量
   int na = 0;  /* number of elements to go to array part */						//返回值，用于从总数中减去
   int n = 0;  /* optimal size for array part */									//出参，用于创建array
   for (i = 0, twotoi = 1; twotoi/2 < *narray; i++, twotoi *= 2) {
-    if (nums[i] > 0) {															//如果区间内有下标
-      a += nums[i];																//累加
-      if (a > twotoi/2) {  /* more than half elements present? */				//当前总数超过半数
-        n = twotoi;  /* optimal size (till now) */								//创建数组的尺寸
-        na = a;  /* all elements smaller than n will go to array part */		//
+    if (nums[i] > 0) {															//如果区间内有下标，才进入处理，否则没意义。
+      a += nums[i];																//开始有意义的计算，统计过往数值key的数量
+      if (a > twotoi/2) {  /* more than half elements present? */				//当前总数超过，幂值的半数，就开始更新
+        n = twotoi;  /* optimal size (till now) */								//创建数组的大小
+        na = a;  /* all elements smaller than n will go to array part */		//进入数组数值的数量（到时候从总数中减去）
       }
     }
-    if (a == *narray) break;  /* all elements already counted */				//当所有的下标都被检到，就结束
+    if (a == *narray) break;  /* all elements already counted */				//后边不会再有数值key了，提前结束
   }
-  *narray = n;																	//用于创建array
+  *narray = n;																	//出参，数组的大小
   lua_assert(*narray/2 <= na && na <= *narray);
-  return na;																	//用于从总数中减去
+  return na;																	//返回数值键的数量
 }
 
 
@@ -547,7 +547,7 @@ static int unbound_search (Table *t, unsigned int j) {
 ** Try to find a boundary in table `t'. A `boundary' is an integer index
 ** such that t[i] is non-nil and t[i+1] is nil (and 0 if t[1] is nil).
 */
-int luaH_getn (Table *t) {
+int luaH_getn (Table *t) {													//
   unsigned int j = t->sizearray;
   if (j > 0 && ttisnil(&t->array[j - 1])) {
     /* there is a boundary in the array part: (binary) search for it */
