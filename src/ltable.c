@@ -181,29 +181,29 @@ int luaH_next (lua_State *L, Table *t, StkId key) {
 */
 
 
-static int computesizes (int nums[], int *narray) {
-  int i;
-  int twotoi;  /* 2^i */
-  int a = 0;  /* number of elements smaller than 2^i */
-  int na = 0;  /* number of elements to go to array part */
-  int n = 0;  /* optimal size for array part */
+static int computesizes (int nums[], int *narray) {								//计算新的数组部分信息
+  int i;																		//
+  int twotoi;  /* 2^i */														//
+  int a = 0;  /* number of elements smaller than 2^i */							//
+  int na = 0;  /* number of elements to go to array part */						//返回值，用于从总数中减去
+  int n = 0;  /* optimal size for array part */									//出参，用于创建array
   for (i = 0, twotoi = 1; twotoi/2 < *narray; i++, twotoi *= 2) {
-    if (nums[i] > 0) {
-      a += nums[i];
-      if (a > twotoi/2) {  /* more than half elements present? */
-        n = twotoi;  /* optimal size (till now) */
-        na = a;  /* all elements smaller than n will go to array part */
+    if (nums[i] > 0) {															//如果区间内有下标
+      a += nums[i];																//累加
+      if (a > twotoi/2) {  /* more than half elements present? */				//当前总数超过半数
+        n = twotoi;  /* optimal size (till now) */								//创建数组的尺寸
+        na = a;  /* all elements smaller than n will go to array part */		//
       }
     }
-    if (a == *narray) break;  /* all elements already counted */
+    if (a == *narray) break;  /* all elements already counted */				//当所有的下标都被检到，就结束
   }
-  *narray = n;
+  *narray = n;																	//用于创建array
   lua_assert(*narray/2 <= na && na <= *narray);
-  return na;
+  return na;																	//用于从总数中减去
 }
 
 
-static int countint (const TValue *key, int *nums) {
+static int countint (const TValue *key, int *nums) {							//如果key是数字下标，则返回 1 个，并更新nums 分布数组
   int k = arrayindex(key);
   if (0 < k && k <= MAXASIZE) {  /* is `key' an appropriate array index? */
     nums[ceillog2(k)]++;  /* count as such */
@@ -214,43 +214,43 @@ static int countint (const TValue *key, int *nums) {
 }
 
 
-static int numusearray (const Table *t, int *nums) {							//计算array部分尺寸
-  int lg;
-  int ttlg;  /* 2^lg */
-  int ause = 0;  /* summation of `nums' */
+static int numusearray (const Table *t, int *nums) {							//计算array部分尺寸，并且将 2^(lg-1) 到 2^lg 区间里的非nil记录到nums
+  int lg;																		//log值
+  int ttlg;  /* 2^lg */															//返回值，array use
+  int ause = 0;  /* summation of `nums' */										//
   int i = 1;  /* count to traverse all array keys */
-  for (lg=0, ttlg=1; lg<=MAXBITS; lg++, ttlg*=2) {  /* for each slice */
+  for (lg=0, ttlg=1; lg<=MAXBITS; lg++, ttlg*=2) {  /* for each slice */		//lg 每次加一，ttlg 每次乘以2，尝试递增
     int lc = 0;  /* counter */
-    int lim = ttlg;
-    if (lim > t->sizearray) {
+    int lim = ttlg;																//(2^(lg-1) 到 2^lg 区间非nil统计值
+    if (lim > t->sizearray) {													//但是，区间不能超过 array部分的尺寸
       lim = t->sizearray;  /* adjust upper limit */
-      if (i > lim)
+      if (i > lim)																//i是上一轮检查停留的位置，超过lim就没有必要再执行了。
         break;  /* no more elements to count */
     }
     /* count elements in range (2^(lg-1), 2^lg] */
-    for (; i <= lim; i++) {
+    for (; i <= lim; i++) {														//检查 2^(lg-1) 到 2^lg 区间内，有多少非nil
       if (!ttisnil(&t->array[i-1]))
         lc++;
     }
-    nums[lg] += lc;
-    ause += lc;
+    nums[lg] += lc;																//将区间统计值保存到nums
+    ause += lc;																	//累加一个总数
   }
   return ause;
 }
 
 
-static int numusehash (const Table *t, int *nums, int *pnasize) {
-  int totaluse = 0;  /* total number of elements */
-  int ause = 0;  /* summation of `nums' */
-  int i = sizenode(t);
-  while (i--) {
+static int numusehash (const Table *t, int *nums, int *pnasize) {				//计算hash部分尺寸通过结果返回，并且期间统计hash中数值下标的数量通过pnasize，并更新分布数组
+  int totaluse = 0;  /* total number of elements */								//返回结果，总数
+  int ause = 0;  /* summation of `nums' */										//
+  int i = sizenode(t);															//现在的node数量
+  while (i--) {																	//遍历所有的node
     Node *n = &t->node[i];
-    if (!ttisnil(gval(n))) {
-      ause += countint(key2tval(n), nums);
-      totaluse++;
+    if (!ttisnil(gval(n))) {													//只看value，没看key，估计有值的value，key也都不是空
+      ause += countint(key2tval(n), nums);										//如果是数字下标，和array一样被统计
+      totaluse++;																//总数
     }
   }
-  *pnasize += ause;
+  *pnasize += ause;																//数组下标的，数量增加。
   return totaluse;
 }
 
@@ -289,10 +289,10 @@ static void setnodevector (lua_State *L, Table *t, int size) {			//给Table map�
 
 static void resize (lua_State *L, Table *t, int nasize, int nhsize) {			//给table的数组做resize，指定了: array的size 和 hash 的size
   int i;
-  int oldasize = t->sizearray;
+  int oldasize = t->sizearray;													//备份旧尺寸
   int oldhsize = t->lsizenode;
-  Node *nold = t->node;  /* save old hash ... */								//这里保存了旧hash
-  if (nasize > oldasize)  /* array part must grow? */							//数组部分，有增大就 growup
+  Node *nold = t->node;  /* save old hash ... */								//这里保存了旧hash，因为hash的内存总是重新分配
+  if (nasize > oldasize)  /* array part must grow? */							//数组部分，有增大就 growup，增大部分会自动设置nil
     setarrayvector(L, t, nasize);
   
   /* create new hash part with appropriate size */
@@ -301,21 +301,22 @@ static void resize (lua_State *L, Table *t, int nasize, int nhsize) {			//给tab
   if (nasize < oldasize) {  /* array part must shrink? */						//如果map size变小了
     t->sizearray = nasize;
     /* re-insert elements from vanishing slice */
-    for (i=nasize; i<oldasize; i++) {											//对于多出来的部分，且不是nil的，归拢到前边的位置去
+    for (i=nasize; i<oldasize; i++) {											//对于多出来的部分，且不是nil的，要重新安置
       if (!ttisnil(&t->array[i]))
-        setobjt2t(L, luaH_setnum(L, t, i+1), &t->array[i]);
+        setobjt2t(L, luaH_setnum(L, t, i+1), &t->array[i]);						//luaH_setnum 是返回重新安置的位置
     }
     /* shrink array */
     luaM_reallocvector(L, t->array, oldasize, nasize, TValue);					//缩小table数组
   }
+  
   /* re-insert elements from hash part */
   for (i = twoto(oldhsize) - 1; i >= 0; i--) {									//遍历所有旧的table map 项目，定位到旧node，转移到新map数组
     Node *old = nold+i;
     if (!ttisnil(gval(old)))
-      setobjt2t(L, luaH_set(L, t, key2tval(old)), gval(old));
+      setobjt2t(L, luaH_set(L, t, key2tval(old)), gval(old));					//给原来的map节点都重新安装
   }
   if (nold != dummynode)
-    luaM_freearray(L, nold, twoto(oldhsize), Node);  /* free old array */
+    luaM_freearray(L, nold, twoto(oldhsize), Node);  /* free old array */		//释放旧的map表
 }
 
 
@@ -331,14 +332,14 @@ static void rehash (lua_State *L, Table *t, const TValue *ek) {						//Table 因
   int i;
   int totaluse;																		//总尺寸
   for (i=0; i<=MAXBITS; i++) nums[i] = 0;  /* reset counts */
-  nasize = numusearray(t, nums);  /* count keys in array part */					//计算array部分尺寸
-  totaluse = nasize;  /* all those keys are integer keys */
-  totaluse += numusehash(t, nums, &nasize);  /* count keys in hash part */			//计算map部分尺寸
+  nasize = numusearray(t, nums);  /* count keys in array part */					//统计array部分的非nil值，并且统计其各个2n次区间的值
+  totaluse = nasize;  /* all those keys are integer keys */							//合计入中成员数
+  totaluse += numusehash(t, nums, &nasize);  /* count keys in hash part */			//计算map部分尺寸，并计入总数，并且对map中的数字下标者更新 nums 和 nasize
   /* count extra key */
-  nasize += countint(ek, nums);
+  nasize += countint(ek, nums);														//以上是现存信息，再加上这次这个新条件的key
   totaluse++;
   /* compute new size for array part */
-  na = computesizes(nums, &nasize);
+  na = computesizes(nums, &nasize);													//现在开始根据 nums 和 nasize 进行计算，期间可能会改变nasize
   /* resize the table to new computed sizes */
   resize(L, t, nasize, totaluse - na);
 }
