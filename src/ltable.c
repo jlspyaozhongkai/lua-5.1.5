@@ -65,28 +65,27 @@
 /*
 ** number of ints inside a lua_Number
 */
-#define numints		cast_int(sizeof(lua_Number)/sizeof(int))		//尺寸上，number抵几个int
+#define numints		cast_int(sizeof(lua_Number)/sizeof(int))			//尺寸上，number抵几个int
 
-#define dummynode		(&dummynode_)								//哑表项通常作为指针使用
+#define dummynode		(&dummynode_)									//哑表项通常作为指针使用
 
-static const Node dummynode_ = {									//Table map 的哑表项目
-  {{NULL}, LUA_TNIL},  /* value */									//value的值
-  {{{NULL}, LUA_TNIL, NULL}}  /* key */								//key的值，包括它的next指针
+static const Node dummynode_ = {										//Table map 的哑表项目
+  {{NULL}, LUA_TNIL},  /* value */										//value的值
+  {{{NULL}, LUA_TNIL, NULL}}  /* key */									//key的值，包括它的next指针
 };
 
 
 /*
 ** hash for lua_Numbers
 */
-//在Table中，通过number 算hash，返回第一个Node
-static Node *hashnum (const Table *t, lua_Number n) {
+static Node *hashnum (const Table *t, lua_Number n) {					//在Table中，通过number 算hash，返回第一个Node
   unsigned int a[numints];
   int i;
   if (luai_numeq(n, 0))  /* avoid problems with -0 */
-    return gnode(t, 0);							//0 不用计算直接返回
+    return gnode(t, 0);													//0 不用计算直接返回
   memcpy(a, &n, sizeof(a));
-  for (i = 1; i < numints; i++) a[0] += a[i];	//将Number散列到一个uint上
-  return hashmod(t, a[0]);						//数值散列定位到首个Node
+  for (i = 1; i < numints; i++) a[0] += a[i];							//将Number散列到一个uint上
+  return hashmod(t, a[0]);												//数值散列定位到首个Node
 }
 
 /*
@@ -113,7 +112,7 @@ static Node *mainposition (const Table *t, const TValue *key) {		//各种通过k
 ** returns the index for `key' if `key' is an appropriate key to live in
 ** the array part of the table, -1 otherwise.
 */
-static int arrayindex (const TValue *key) {
+static int arrayindex (const TValue *key) {								//输入key 返回数组索引，必须是number int 类型的
   if (ttisnumber(key)) {
     lua_Number n = nvalue(key);
     int k;
@@ -121,7 +120,7 @@ static int arrayindex (const TValue *key) {
     if (luai_numeq(cast_num(k), n))
       return k;
   }
-  return -1;  /* `key' did not match some condition */
+  return -1;  /* `key' did not match some condition */					//否则返回-1
 }
 
 
@@ -215,7 +214,7 @@ static int countint (const TValue *key, int *nums) {
 }
 
 
-static int numusearray (const Table *t, int *nums) {
+static int numusearray (const Table *t, int *nums) {							//计算array部分尺寸
   int lg;
   int ttlg;  /* 2^lg */
   int ause = 0;  /* summation of `nums' */
@@ -288,36 +287,29 @@ static void setnodevector (lua_State *L, Table *t, int size) {			//给Table map�
 }
 
 
-//给table的数组做resize，指定了: array的size 和 hash 的size
-static void resize (lua_State *L, Table *t, int nasize, int nhsize) {
+static void resize (lua_State *L, Table *t, int nasize, int nhsize) {			//给table的数组做resize，指定了: array的size 和 hash 的size
   int i;
   int oldasize = t->sizearray;
   int oldhsize = t->lsizenode;
-  Node *nold = t->node;  /* save old hash ... */		//这里保存了旧hash
-  //数组部分，有增大就 growup
-  if (nasize > oldasize)  /* array part must grow? */
+  Node *nold = t->node;  /* save old hash ... */								//这里保存了旧hash
+  if (nasize > oldasize)  /* array part must grow? */							//数组部分，有增大就 growup
     setarrayvector(L, t, nasize);
   
   /* create new hash part with appropriate size */
-  //这里分配就了新hash
-  setnodevector(L, t, nhsize);  
+  setnodevector(L, t, nhsize);  												//这里分配就了新hash
 
-  //如果map size变小了
-  if (nasize < oldasize) {  /* array part must shrink? */
+  if (nasize < oldasize) {  /* array part must shrink? */						//如果map size变小了
     t->sizearray = nasize;
     /* re-insert elements from vanishing slice */
-    //对于多出来的部分，且不是nil的，归拢到前边的位置去
-    for (i=nasize; i<oldasize; i++) {
+    for (i=nasize; i<oldasize; i++) {											//对于多出来的部分，且不是nil的，归拢到前边的位置去
       if (!ttisnil(&t->array[i]))
         setobjt2t(L, luaH_setnum(L, t, i+1), &t->array[i]);
     }
     /* shrink array */
-	//缩小table数组
-    luaM_reallocvector(L, t->array, oldasize, nasize, TValue);
+    luaM_reallocvector(L, t->array, oldasize, nasize, TValue);					//缩小table数组
   }
   /* re-insert elements from hash part */
-  //遍历所有旧的table map 项目，定位到旧node，转移到新map数组
-  for (i = twoto(oldhsize) - 1; i >= 0; i--) {
+  for (i = twoto(oldhsize) - 1; i >= 0; i--) {									//遍历所有旧的table map 项目，定位到旧node，转移到新map数组
     Node *old = nold+i;
     if (!ttisnil(gval(old)))
       setobjt2t(L, luaH_set(L, t, key2tval(old)), gval(old));
@@ -327,22 +319,21 @@ static void resize (lua_State *L, Table *t, int nasize, int nhsize) {
 }
 
 
-//给Table的数组 resize
-void luaH_resizearray (lua_State *L, Table *t, int nasize) {
+void luaH_resizearray (lua_State *L, Table *t, int nasize) {						//给Table的数组 resize
   int nsize = (t->node == dummynode) ? 0 : sizenode(t);
-  resize(L, t, nasize, nsize);
+  resize(L, t, nasize, nsize);														//重新设置size，hash部分取自table，array部分长度用参数
 }
 
 
-static void rehash (lua_State *L, Table *t, const TValue *ek) {
+static void rehash (lua_State *L, Table *t, const TValue *ek) {						//Table 因为ek 扩充的时候调用
   int nasize, na;
   int nums[MAXBITS+1];  /* nums[i] = number of keys between 2^(i-1) and 2^i */
   int i;
-  int totaluse;
+  int totaluse;																		//总尺寸
   for (i=0; i<=MAXBITS; i++) nums[i] = 0;  /* reset counts */
-  nasize = numusearray(t, nums);  /* count keys in array part */
+  nasize = numusearray(t, nums);  /* count keys in array part */					//计算array部分尺寸
   totaluse = nasize;  /* all those keys are integer keys */
-  totaluse += numusehash(t, nums, &nasize);  /* count keys in hash part */
+  totaluse += numusehash(t, nums, &nasize);  /* count keys in hash part */			//计算map部分尺寸
   /* count extra key */
   nasize += countint(ek, nums);
   totaluse++;
@@ -381,9 +372,9 @@ void luaH_free (lua_State *L, Table *t) {						//释放Table
 }
 
 
-static Node *getfreepos (Table *t) {
-  while (t->lastfree-- > t->node) {
-    if (ttisnil(gkey(t->lastfree)))
+static Node *getfreepos (Table *t) {							//给插入新key找一个空位置
+  while (t->lastfree-- > t->node) {								//从后往前找
+    if (ttisnil(gkey(t->lastfree)))								//nil key 就是可以用的
       return t->lastfree;
   }
   return NULL;  /* could not find a free place */
@@ -402,26 +393,26 @@ static TValue *newkey (lua_State *L, Table *t, const TValue *key) {					//在要
   Node *mp = mainposition(t, key);													//首先根据在这个key的hash值，定位到Node*，mp就是mainposition的意思
   if (!ttisnil(gval(mp)) || mp == dummynode) {										//首个Node，如果是不是nil值，那么就是被使用着（否则就直接赋值了）
     Node *othern;
-    Node *n = getfreepos(t);  /* get a free place */
+    Node *n = getfreepos(t);  /* get a free place */								//找个现在为nil的key来使用，从末尾的lastfree来使用
     if (n == NULL) {  /* cannot find a free place? */
-      rehash(L, t, key);  /* grow table */
-      return luaH_set(L, t, key);  /* re-insert key into grown table */
+      rehash(L, t, key);  /* grow table */											//找不到就扩充map表
+      return luaH_set(L, t, key);  /* re-insert key into grown table */				//然后再重新插入一次
     }
     lua_assert(n != dummynode);
-    othern = mainposition(t, key2tval(mp));
-    if (othern != mp) {  /* is colliding node out of its main position? */
+    othern = mainposition(t, key2tval(mp));											//检查mp上节点，是hash对号的（因为有可能是getfreepos来的，本该我的节点被占用了）
+    if (othern != mp) {  /* is colliding node out of its main position? */			//当前mp节点在这里是不合适的
       /* yes; move colliding node into free position */
-      while (gnext(othern) != mp) othern = gnext(othern);  /* find previous */
-      gnext(othern) = n;  /* redo the chain with `n' in place of `mp' */
+      while (gnext(othern) != mp) othern = gnext(othern);  /* find previous */		//从你源头的mp开始找，找到谁指向了你。
+      gnext(othern) = n;  /* redo the chain with `n' in place of `mp' */			//把找到的n，代替之前的mp
       *n = *mp;  /* copy colliding node into free pos. (mp->next also goes) */
-      gnext(mp) = NULL;  /* now `mp' is free */
+      gnext(mp) = NULL;  /* now `mp' is free */										//那么mp就闲出来了
       setnilvalue(gval(mp));
     }
     else {  /* colliding node is in its own main position */
       /* new node will go into free position */
-      gnext(n) = gnext(mp);  /* chain new position */
+      gnext(n) = gnext(mp);  /* chain new position */								//找到的节点放在mp的后面
       gnext(mp) = n;
-      mp = n;
+      mp = n;																		//赋值给mp，后边用
     }
   }
   gkey(mp)->value = key->value; gkey(mp)->tt = key->tt;								//mp 来做key了，key的部分按照参数key 赋值类型和值
