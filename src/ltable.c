@@ -131,7 +131,7 @@ static int arrayindex (const TValue *key) {								//输入key 返回数组索�
 */
 static int findindex (lua_State *L, Table *t, StkId key) {
   int i;
-  if (ttisnil(key)) return -1;  /* first iteration */
+  if (ttisnil(key)) return -1;  /* first iteration */					//nil key 的index为 -1，就是没有
   i = arrayindex(key);
   if (0 < i && i <= t->sizearray)  /* is `key' inside array part? */
     return i-1;  /* yes; that's the index (corrected to C) */
